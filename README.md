@@ -1,4 +1,4 @@
-# Our Default Github issues Workflow
+# Our Default Github Issues Workflow
 
 This repository is a template for our default Github issues workflow in Praqma.
 We use the workflow for our Github repositories that uses Githubs issues.
