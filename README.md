@@ -8,3 +8,6 @@ It is simple, it is easy to use and it uses some simple conventions and are only
 
 ##The Waffle Flow
 Get inspiration to a waffle suported workflow in [this Gist](https://gist.github.com/lakruzz/77786b48f5dc0b3ef063).
+
+## GitHub Label Manager
+Have a look at [Destan Sarpkaya's](https://github.com/destan) [GitHub Label Manager](http://www.dorukdestan.com/github-label-manager/), it's what we currently use to sync labes between repo's.
