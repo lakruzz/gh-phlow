@@ -13,3 +13,11 @@ Get inspiration to a waffle suported workflow in [this Gist](https://gist.github
 
 ## GitHub Label Manager
 Have a look at [Destan Sarpkaya's](https://github.com/destan) [GitHub Label Manager](http://www.dorukdestan.com/github-label-manager/), it's what we currently use to sync labels between repo's.
+
+# Changes
+
+Changelog for different versions of this template repository. We can't tag releases, as meta data like labels are not affected by tags, so we just keep a manual change log below.
+
+## Version 1.0
+
+Initial version, developed or the last few month from our experiences.
