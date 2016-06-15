@@ -28,13 +28,13 @@
 			git issue-wip $1; \
 			ghi assign $1; \
 		}; f"
-	issue-branch = "!f() { \
+  issue-branch = "!f() { \
 		  MATCH=[#↑]$1:; \
 			ghi show $1 2>/dev/null \
 			| grep $MATCH \
 			| sed   s/$MATCH/$1/g \
 			| sed 's/ /-/g' \
-			| sed s/[:\\'\\/]//g; \
+			| sed s/[:\\'\\/\\\"]//g; \
 		}; f"
 	default-branch = "!f() { \
 		  curl -s 'https://api.github.com/repos/'`git hub-name` \
