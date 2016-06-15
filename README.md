@@ -10,8 +10,10 @@ This repository contains some of the building blocks used to setup the phlow.
 
 But if you want to know more background have a look at the Stories:
 
-- [A Praqmatic following](http://www.praqma.com/stories/a-pragmatic-workflow/){: target="_blank" }
-- [Milestones and Office hours](http://www.praqma.com/stories/milestones-and-officehours/){: target="_blank" }
+- [A Praqmatic following](http://www.praqma.com/stories/a-pragmatic-workflow/)
+- [Milestones and Office hours](http://www.praqma.com/stories/milestones-and-officehours/)
+- [An Automated Git branching strategy](http://www.josra.org/blog/An-automated-git-branching-strategy.html)
+- [Pretested Integation Plugin](http://www.josra.org/blog/Pretested+integration+plugin.html) (for Jenkins)
 
 The phlow itself is simple to use. It's uses some simple conventions and are only structures around labels and optionally a Kanban board on top from [waffle.io](https://waffle.io).
 
