@@ -46,5 +46,3 @@ ghi label "Status - duplicate"          -c 111111
 ghi label "Status - workable"           -c EDEDED
 ghi label "Status - in progress"        -c EDEDED
 ghi label "Status - up next"            -c EEEEEE
-#  ghi label "Type - Implementation"       -c FAD8C7
-#  ghi label "Type - Content"              -c F7C6C7
