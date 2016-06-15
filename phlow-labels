@@ -1,7 +1,7 @@
 #! /bin/bash
 
 usage="
-  Usage: default-ghi-labels [--help] [--clean]
+  Usage:  phlow-labels [--help] [--clean]
 
     --clean   Deletes all existing labels in the repo
               before the new ones are created.
@@ -37,7 +37,7 @@ ghi label "Prio 1 - must have"          -c E83D0F
 ghi label "Prio 2 - should have"        -c EB6420
 ghi label "Prio 3 - could have"         -c E8850F
 ghi label "Prio 4 - won't have"         -c E8A80F
-ghi label "Size 0 - Briefing"           -c C7DEF8
+ghi label "Size 0 - briefing"           -c C7DEF8
 ghi label "Size 1 - small"              -c 20B4E5
 ghi label "Size 2 - medium"             -c 208FE5
 ghi label "Size 3 - large"              -c 0052CC
@@ -45,6 +45,6 @@ ghi label "Size 4 - too big"            -c 100B6B
 ghi label "Status - duplicate"          -c 111111
 ghi label "Status - workable"           -c EDEDED
 ghi label "Status - in progress"        -c EDEDED
-ghi label "Status - up Next"            -c EEEEEE
+ghi label "Status - up next"            -c EEEEEE
 #  ghi label "Type - Implementation"       -c FAD8C7
 #  ghi label "Type - Content"              -c F7C6C7
