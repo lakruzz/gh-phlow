@@ -19,6 +19,7 @@
 [alias]
 
 ## The Phlow >>
+  tree = log --graph --full-history --all --color --date=short   --pretty=format:"%Cred%x09%h %Creset%ad%Cblue%d %Creset %s   %C(bold)(%an)%Creset"
   addremove = add -A .
   co = checkout
   work-on	= "!f() { \
