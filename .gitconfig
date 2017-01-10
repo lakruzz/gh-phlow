@@ -39,7 +39,7 @@
     | sed s/[:\\'\\/\\\"]//g; \
   }; f"
   default-branch = "!f() { \
-    curl -s 'https://api.github.com/repos/'`git hub-name` \
+    curl -s -u :`git get-ghi-token` 'https://api.github.com/repos/'`git hub-name` \
     | grep 'default_branch' \
     | cut -d ':' -f2 \
     |  sed s/[\\ ,\\\"]//g; \
@@ -77,4 +77,9 @@
     git push origin :%br' 2>/dev/null; \
     git fetch --prune; \
   }; f "
+  get-ghi-token = "!f(){ \
+	 USER=`git config --global --get github.user`; \
+	 security find-internet-password -a $USER -s github.com -l ghi\\ token -w; \
+	}; f"
+
 ## << The Phlow
