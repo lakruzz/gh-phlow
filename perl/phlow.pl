@@ -27,7 +27,8 @@ GetOptions(
     "integration=s"        => \$Sw_integration_branch,
     "worker=s"             => \$Sw_worker_branch,
 		"help"                 => sub { pod2usage(-exitval => 0, -verbose => 1) },
-    "man"                  => sub { pod2usage(-exitval => 0, -verbose => 2) }
+    "man"                  => sub { pod2usage(-exitval => 0, -verbose => 2) },
+		"pod2html"             => \&pod2html()
 	)
 ) || pod2usage(-exitval => 1, -verbose => 0);
 
@@ -41,7 +42,90 @@ merge( {
 
 exit(0);
 
-# end of main loop
+###################################################
+
+# Below is all the POD documentation following the conventional chapters as described in (http://perldoc.perl.org/perlpod.html). The functions are implemented after the last pod chapter FUNCTIONS is declared.
+
+=pod
+
+=head1 NAME
+
+This script is related to "The Phlow" described in detail in L<A Praqmatic Workflow|http://www.praqma.com/stories/a-pragmatic-workflow/>
+
+It provides the various features that are required to support automated integration of worker branches and hereby enable an automated pretested integration strategy on CI serveres.
+
+=over
+
+=item B<Copyright:>
+
+Praqma, 2017, L<www.praqma.com|http://www.praqma.com>
+
+=item B<License:>
+
+M.I.T.
+
+=item B<Repository:>
+
+L<github.com/praqma/the-phlow|http://github.com/praqma/the-phlow>
+
+=item B<Support:>
+
+Use the L<issue system|http://github.com/praqma/the-phlow/issues> in the repo
+
+=back
+
+=head1 SYNOPSIS
+
+ phlow -integration branch -worker branch [-[no]squash]
+ phlow -help | -man
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<-worker branch>
+
+branch is the source of your commit.
+
+=item B<-integration branch>
+
+branch is the target for your integration.
+
+=item B<-[no]squash>
+
+Will squash commits if source contains more than one new commit. -squash is default. -nosquash will integrate all commets to the target branch as is.
+
+=item B<-help>
+
+Print a brief help message and exits.
+
+=item B<-man>
+
+Prints the manual page and exits.
+
+=back
+
+=head1 DESCRIPTION
+
+The script is helping implementing the git gymnastics required on the CI server to support "the Phlow".
+
+It's essentially the features developed in the Jenkins plugin called L<"Pretested Integration Plugin"|https://wiki.jenkins-ci.org/display/JENKINS/Pretested+Integration+Plugin> but wrapped up in a script instead of a Jenkins specifc plugin.
+
+The vision is to create a generic way of supporting the Phlow, that is independent of what CI server you've chosen. Regardless if you are on Travis, Concourse, GitLab CI - or I<whatever>, this script and the features it provides are the only thing you need.
+
+The most simple use of it is like this:
+
+C<< phlow.pl -integration master -worker ready/my-worker >>
+
+The script will then do the necessary merge, leaving you the workspace you can use for your toll-gate test.
+
+=head1 OUTSTANDINGS
+
+This script is still being developed. Some paths aren't implemented yet C<-nosquash> is supported, but C<-squash> isn't.
+
+Also the script will need to run again after you have run the toll-gate test, and dependant on wether you had success or failure it will either push to origin or not - and it will do some necessary branch cleanup.
+
+Any fatures you would like to see, you are welcome to suggest and contribute.
 
 =head1 FUNCTIONS
 
@@ -112,7 +196,7 @@ Default is 1 (true)
 
 =cut
 
-	# read the hase reference, and dereference it.
+	# read the hash reference, and dereference it.
 	my $options_ref = shift; my %options = %$options_ref;
 
 	defined( $options{'from'} ) && defined( $options{'to'} )
@@ -128,75 +212,46 @@ Default is 1 (true)
 		system("git pull --rebase $Remote $options{'to'}"); $? && croak;
 	};
 
+	system("git checkout $options{'to'}"); $? && croak;
 
+	if ($options{'squash'}){
+		confess "We're in the merge() function and the option 'squash' is set to true. Aaargh! We're not done, this path in the tree isn't implemented yet!";
+	} else {
+		system("git merge $options{'from'}"); $? && croak;
+	};
+
+}
+
+sub pod2html(){
+
+=head2 pod2html
+
+B<Input:> $title
+
+The title to apply to the generated html file
+
+=over
+
+=item title (string) I<[optional]>
+
+Default set to the name of the file + "documentation". E.g.
+
+=back
+
+Generates a html file from the embedded pod. In a file with same name but C<.html> extension and in teh same location as the script itself.
+
+If such a file exist already, it will be over written.
+
+=cut
+  my $title = shift;
+	my($basename, $dir, $suffix) = fileparse(__FILE__,qr/\.[^.]*/);
+	my $outfile = $dir.$basename.'.html';
+	defined($title) || do { $title = $basename." documentation"};
+
+	system("pod2html --title \"$title\" ".__FILE__." > $outfile"); $? && croak;
+
+  exit(0);
 
 }
 
 __END__
-
-# Below is all the POD documentation (http://perldoc.perl.org/perlpod.html).
-# The interpreter won't go beyond the __END__ specified above, so don't add more statemments below this point.
-
-=pod
-
-=head1 NAME
-
-This script is related to "The Phlow" described in detail in L<A Praqmatic Workflow|http://www.praqma.com/stories/a-pragmatic-workflow/>
-
-It provides the various features that are required to support automated integration of worker branches and hereby enable an automated pretested integration strategy on CI serveres.
-
-=over
-
-=item B<Copyright:>
-
-Praqma, 2017, L<www.praqma.com|http://www.praqma.com>
-
-=item B<License:>
-
-M.I.T.
-
-=item B<Repository:>
-
-L<github.com/praqma/the-phlow|http://github.com/praqma/the-phlow>
-
-=item Support:
-
-Use the L<issue system|http://github.com/praqma/the-phlow/issues> in the repo
-
-=back
-
-=head1 SYNOPSIS
-
- phlow -integration branch -worker branch [-[no]squash]
- phlow -help | -man
-
-=head1 OPTIONS
-
-=over 8
-
-=item B<-worker branch>
-
-branch is the source of your commit.
-
-=item B<-integration branch>
-
-branch is the target for your integration.
-
-=item B<-[no]squash>
-
-Will squash commits if source contains more than one new commit. -squash is default. -nosquash will integrate all commets to the target branch as is.
-
-=item B<-help>
-
-Print a brief help message and exits.
-
-=item B<-man>
-
-Prints the manual page and exits.
-
-=back
-
-=head1 DESCRIPTION
-
-
-=cut
