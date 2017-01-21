@@ -69,6 +69,19 @@
       && git branch -m delivered/$BRANCH; \
     fi; \
   }; f"
+  local-deliver = "!f() { \
+      BRANCH=`git symbolic-ref --short HEAD`; \
+      if [[ $BRANCH =~ ^delivered/ || $BRANCH == `git default-branch` ]]; \
+      then \
+        echo 'Come on! - You can't deliver this branch!; \
+      else \
+  		  git co `git default-branch`; \
+  			git pull; \
+  			git merge $BRANCH \
+        && git branch -m $BRANCH delivered/$BRANCH \
+  			&& git push; \
+      fi; \
+    }; f"  
   purge-all-delivered = "!f() { \
     git co `git default-branch`; \
     git branch | grep 'delivered/' \
