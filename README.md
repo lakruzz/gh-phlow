@@ -1,4 +1,4 @@
-# Welcome to the-Phlow
+# Welcome to the Phlow
 
 __Pronunciation: /floʊ/  ...as in *"flow"*__
 
@@ -25,6 +25,9 @@ We've added a script [phlow-labels](https://github.com/Praqma/the-phlow/blob/mas
 ## Roadmap
 
 We're using this phlow heavily internally in Praqma, and we're improving it constantly. The idea is that we will develop this as a git extension, rather than a pile of aliases, and we will probably also build in the features that are currently utilized from Ghi, so it eventually becomes just one install.
+
+## The git-phlow extension repository
+the official git-phlow tool is located on this repository [git-phlow](https://github.com/Praqma/git-phlow)
 
 ## Contribute
 
