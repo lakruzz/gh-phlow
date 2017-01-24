@@ -75,13 +75,14 @@
       then \
         echo 'Come on! - You can't deliver this branch!; \
       else \
-  		  git co `git default-branch`; \
-  			git pull; \
-  			git merge $BRANCH \
+        git pull --rebase \
+  	&& git co `git default-branch` \
+  	&& git pull \
+  	&& git merge $BRANCH \
         && git branch -m $BRANCH delivered/$BRANCH \
-  			&& git push; \
+  	&& git push; \
       fi; \
-    }; f"  
+    }; f"
   purge-all-delivered = "!f() { \
     git co `git default-branch`; \
     git branch | grep 'delivered/' \
