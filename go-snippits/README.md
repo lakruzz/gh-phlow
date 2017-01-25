@@ -33,8 +33,11 @@ Luckely there is a tool called `ronn` which actually provides a way of convertin
 we can have the manual in markdown, html exports are also supported. 
 
 [about man pages](https://blog.terminal.com/tutorial-how-to-write-man-pages/)
+
 [Easy man page creation with Ronn](https://spin.atomicobject.com/2015/05/06/man-pages-in-markdown-ronn/)
+
 [Github hosted manpage with ronn](http://rtomayko.github.io/ronn/ronn-format.7.html)
+
 [template](https://github.com/rtomayko/ronn/tree/master/lib/ronn/template)
 
 
