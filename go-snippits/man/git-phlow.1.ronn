@@ -1,0 +1,29 @@
+hello(1) -- greets the world, or another arbitrary target 
+====
+
+## SYNOPSIS  
+`hello` [<target>]
+
+## OPTIONS
+## SYNTAX
+## ENVIRONMENT
+## RETURN VALUES
+## STANDARDS
+## SECURITY CONSIDERATIONS
+## BUGS
+## HISTORY
+
+
+## DESCRIPTION  hello(1) is a program that greets either  
+- the entire world, if <target> is not supplied, or  
+- an arbitrary person, group, or other target.
+
+## AUTHOR  
+
+
+## SEE ALSO  
+
+goodbye(1)  
+
+[Easy man page creation with Ronn](https://spin.atomicobject.com/2015/05/06/man-pages-in-markdown-ronn/)
+[Github hosted manpage with ronn](http://rtomayko.github.io/ronn/ronn-format.7.html)
