@@ -6,6 +6,7 @@
 - Documentaion
 - Man page
 - Technologies
+- File Structure 
 
 
 ### Documentation
@@ -14,7 +15,8 @@ For argument parsing and --help documentation the [docopt](http://docopt.org/) l
 
 
 ####Cobra
-Cobra is a tool for handling command inputs and flags, and it is used widely by popular tools
+Cobra is a tool for handling command inputs and flags, and it is used widely by popular tools. Cobra has usages where zsh autocompletion have been added, so that should be a managable extensions 
+as well.  
 
 Cobra is used by
 - kubernetes
@@ -23,7 +25,7 @@ Cobra is used by
 - rkt
 
 ####Docopt
-
+Docopt mainly gives POSIX help, but the POSIX description need to be maintained. 
 
 
 ###Man page
@@ -78,6 +80,23 @@ Resources for getting started with git2go, and usage of the librarys
 
 
 
+
+###File Structure
+A go workspace consists of 3 folders: `src`,`pkg`,`bin`. inside the `src` folder is where the go project will be located. Normally
+you use the name convention `github.com/user/repo` which will translate to a package structure like: 
+
+```
+bin
+pkg
+src
+└── Github.com
+	└── user
+		└── repo
+			├── yourpackage
+			├── yourpackage
+			└── yourpackage
+
+``` 
 
 
 
