@@ -7,6 +7,7 @@
 - Man page
 - Technologies
 - File Structure 
+- Binaries
 
 
 ### Documentation
@@ -98,5 +99,29 @@ src
 
 ``` 
 
+
+###Building Binaries
+Go compiles the code into one binary. it is possible to statically link the dependencies of the binary into the go binary itself. This way we onely have one file to distribute.
+In our project with the current technologies, which have cascading dependencies to low level C libraries. These can be difficult to build with the binary. 
+We might need a specialzed make script, or at least an installation guide with the project (This is not critical during development).
+To add version and git sha we have a few option. This could be a simple solution
+```go
+
+var (
+	version string #Variable references in build cmd
+	sha     string #Variable references in build cmd
+)
+
+func main() {
+	fmt.Println(runtime.Version()) 	#Prints the go version   
+	fmt.Println(version) 			#Prints the version variable - This will be our release version 
+	fmt.Println(sha) 				#Prints git sha
+}
+```
+```
+#Build cmd with go CLI
+
+ go build -ldflags "-X main.version=$PATH -X  main.sha=`git rev-parse HEAD`"   
+```
 
 
