@@ -49,6 +49,7 @@
   hub-name =  "!f() { \
     git config --get remote.origin.url \
     | cut -d ':' -f2 \
+    | sed s@//github.com/@@g \
     | sed s/.git$//g; \
   }; f"
   issue-wip = "!f() { \
