@@ -1,0 +1,209 @@
+#!/usr/bin/perl
+require 5.000;
+use strict;                # http://perldoc.perl.org/strict.html
+use Carp;                  # http://perldoc.perl.org/Carp.html
+use Cwd;                   # http://perldoc.perl.org/Cwd.html
+
+# File version
+our $VERSION    = "1.0";                             #major.minor
+our $PATCH      = "1";                               #patch
+
+use Getopt::Long;          # http://perldoc.perl.org/Getopt/Long.html
+use Pod::Usage;            # http://perldoc.perl.org/Pod/Usage.html
+use JSON::PP;
+
+# Holds the global variables that are used to cache the value of our options
+our %options;
+
+# The while-listed phlow commands
+our %valid_commands = (
+  addremove => '',
+  defaultbranch => '',
+);
+
+GetOptions(
+  (
+    "verbose!"             => \$options{verbose},
+		"help"                 => \$options{help},
+    "man"                  => sub { pod2usage(-exitval => 0, -verbose => 2) }	)
+) || pod2usage(-exitval => 1, -verbose => 0);
+
+our $Phlowcommand = shift;
+
+validate_context();
+
+eval $Phlowcommand ;
+
+
+exit(0);
+
+###################################################
+
+# Below is all the POD documentation following the conventional chapters as described in (http://perldoc.perl.org/perlpod.html). The functions are implemented after the last pod chapter COMMANDS is declared.
+
+=pod
+
+=head1 NAME
+
+This script is related to "The Phlow" described in detail in L<A Praqmatic Workflow|http://www.praqma.com/stories/a-pragmatic-workflow/>
+
+It provides the various features that are required to support automated integration of worker branches and hereby enable an automated pretested integration strategy on CI serveres.
+
+=over
+
+=item B<Copyright:>
+
+Praqma, 2017, L<www.praqma.com|http://www.praqma.com>
+
+=item B<License:>
+
+M.I.T.
+
+=item B<Repository:>
+
+L<github.com/praqma/the-phlow|http://github.com/praqma/the-phlow>
+
+=item B<Support:>
+
+Use the L<issue system|http://github.com/praqma/the-phlow/issues> in the repo
+
+=back
+
+=head1 SYNOPSIS
+
+  git phlow <command> [options] [arguments]
+  git phlow --man|--help
+
+All options can be shortend to their shortest unambigious form and you can use one or two dashes in front of options, as your temper prefers - we don't care.
+
+E.g. C<-h> can substitute C<--help>.
+
+=head1 OPTIONS
+
+The valid phlow commands are listed below.
+
+  phlow addremove [--help][--verbose]
+  phlow defaultbranch
+
+
+=head1 DESCRIPTION
+
+The script is helping implementing the git gymnastics required on the CI server to support "the Phlow".
+
+It's essentially the features developed in the Jenkins plugin called L<"Pretested Integration Plugin"|https://wiki.jenkins-ci.org/display/JENKINS/Pretested+Integration+Plugin> but wrapped up in a script instead of a Jenkins specifc plugin.
+
+The vision is to create a generic way of supporting the Phlow, that is independent of what CI server you've chosen. Regardless if you are on Travis, Concourse, GitLab CI - or I<whatever>, this script and the features it provides are the only thing you need.
+
+The most simple use of it is like this:
+
+C<< phlow.pl -integration master -worker ready/my-worker >>
+
+The script will then do the necessary merge, leaving you the workspace you can use for your toll-gate test.
+
+=head1 COMMANDS
+
+=cut
+
+sub validate_context(){
+
+	unless (defined $valid_commands{$Phlowcommand}){
+		print STDERR "$Phlowcommand is not a legal command\n";
+		pod2usage(-exitval => 1, -verbose => 1)
+	};
+
+  defined $options{help} && pod2usage(
+   -verbose => 99,
+   -exitval => 1,
+   -sections => [ "COMMANDS/".$Phlowcommand ]
+  );
+
+  defined( $options{verbose} ) ||  do {$options{verbose} = 0};
+
+  $options{verbose} && print "Phlow $Phlowcommand\n";
+
+
+	`git branch --remote 2>&1`;	$? && croak "Not in a valid git context";
+
+	# Are we at the toplevel?
+	my $git_toplevel = `git rev-parse --show-toplevel 2>&1`;chomp($git_toplevel);
+	my $pwd = cwd();
+	$git_toplevel eq $pwd || croak "Working directory ($pwd), must be the top-level in the git tree ($git_toplevel) at the time of execution";
+};
+
+sub addremove(){
+
+=head2 addremove
+
+C<addremove> is implementing Mercurials command of the same name.
+
+It doesn't take any parametes. It simply synchronizes your current work tree
+with the index; It adds the files you have added or modified and removes the files that you may removed.
+
+=cut
+	cmd(command => "git add -A .", verbose => $options{verbose} )
+
+};
+
+sub defaultbranch(){
+
+=head2 defaultbranch
+
+C<defaultbranch> Returns the default branch. This is a setting on the GitHub repository.
+
+=cut
+
+  my $cmd = 'curl -s -u :'.gettoken()
+    .' https://api.github.com/repos/'.hubname();
+  my $raw_json = cmd( command => $cmd, verbose => $options{verbose});
+  my $json = JSON::PP->new->utf8->relaxed([1])->decode($raw_json);
+  print $json->{default_branch}."\n";
+}
+
+######## Non exposed helper functions
+
+sub hubname(){
+  my $remoteurl = cmd(
+    command => 'git config --get remote.origin.url',
+    verbose => $options{verbose} );
+  my ($srv, $hubname) = split /:/, $remoteurl;
+  $hubname =~ s@//github.com/@@g;
+  $hubname =~ s/.git$//g;
+  return $hubname;
+}
+
+sub gettoken(){
+  my $token = cmd(
+    command => 'git config --global --get ghi.token',
+    verbose => $options{verbose});
+  if ($token =~ s/^!//){
+    $token = cmd(
+      command => $token,
+      verbose => $options{verbose});
+  };
+  chomp($token);
+  return $token;
+}
+
+sub cmd ($) {
+
+    my %opt = @_;
+    croak "input parameter for key 'command' required" unless ( $opt{command} );
+    defined( $opt{die_on_err} )   ||  do {$opt{die_on_err}   = 1};
+		defined( $opt{merge_errout} ) ||  do {$opt{merge_errout} = 1};
+		defined( $opt{verbose} )      ||  do {$opt{verbose}      = 0};
+		defined( $opt{return_array} ) ||  do {$opt{return_array} = 0};
+
+    my $cmd = ($opt{merge_errout})? $opt{command} . ' 2>&1' : $opt{command};
+		$opt{verbose} && print $opt{command}."\n";
+    my @res = qx($cmd);
+
+    # Report errors unless we expect the call to generate non-zero exit value
+    unless ( $opt{err_ok} ) {
+        if ($?) {
+            croak "Execution of [$cmd] returned a non-zero value (".( ($?) / 256 ).")";
+        }
+    };
+    return ( $opt{return_array} ) ? @res : join( '', @res );
+}
+
+__END__
