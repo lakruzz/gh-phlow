@@ -39,7 +39,7 @@ exit(0);
 
 ###################################################
 
-# Below is all the POD documentation following the conventional chapters as described in (http://perldoc.perl.org/perlpod.html). The functions are implemented after the last pod chapter COMMANDS is declared.
+# Below is all the POD documentation following the conventional chapters as described in (http://perldoc.perl.org/perlpod.html). The functions are implemented after the last pod chapter COMMANDS is declared. The commands have POD text, the helper functions doesn't
 
 =pod
 
@@ -47,7 +47,7 @@ exit(0);
 
 This script is related to "The Phlow" described in detail in L<A Praqmatic Workflow|http://www.praqma.com/stories/a-pragmatic-workflow/>
 
-It provides the various features that are required to support automated integration of worker branches and hereby enable an automated pretested integration strategy on CI serveres.
+It provides the various features that are required to support all user scenarios of the Phlow.
 
 =over
 
@@ -88,17 +88,20 @@ The valid phlow commands are listed below.
 
 =head1 DESCRIPTION
 
-The script is helping implementing the git gymnastics required on the CI server to support "the Phlow".
+The script is helping implementing the git gymnastics required bot as an end user and on the CI servers to support "the Phlow".
 
-It's essentially the features developed in the Jenkins plugin called L<"Pretested Integration Plugin"|https://wiki.jenkins-ci.org/display/JENKINS/Pretested+Integration+Plugin> but wrapped up in a script instead of a Jenkins specifc plugin.
+The most simple use of it is to clone the repo to your PC, and then link the perl folder to a directory that is in your C<$PATH> like this:
 
-The vision is to create a generic way of supporting the Phlow, that is independent of what CI server you've chosen. Regardless if you are on Travis, Concourse, GitLab CI - or I<whatever>, this script and the features it provides are the only thing you need.
+    git clone https://github.com/Praqma/the-phlow.git
+    ln -s ./the-phlow/perl ~/opt/phlow
 
-The most simple use of it is like this:
+and then add /Users/you/opt/phlow to your C<$PATH> in C<.zshrc> or C<.bashrc> or what ever you are using.
 
-C<< phlow.pl -integration master -worker ready/my-worker >>
+Hereafter you will hvae access to all the phlow commands like this
 
-The script will then do the necessary merge, leaving you the workspace you can use for your toll-gate test.
+    git phlow addremove
+    git phlow work-on
+    ...
 
 =head1 COMMANDS
 
@@ -121,13 +124,6 @@ sub validate_context(){
 
   $options{verbose} && print "Phlow $Phlowcommand\n";
 
-
-	`git branch --remote 2>&1`;	$? && croak "Not in a valid git context";
-
-	# Are we at the toplevel?
-	my $git_toplevel = `git rev-parse --show-toplevel 2>&1`;chomp($git_toplevel);
-	my $pwd = cwd();
-	$git_toplevel eq $pwd || croak "Working directory ($pwd), must be the top-level in the git tree ($git_toplevel) at the time of execution";
 };
 
 sub addremove(){
