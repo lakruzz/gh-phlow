@@ -1,0 +1,16 @@
+
+##   The following aliases are
+##   Not strictly speaking part of the phlow,
+##   But never the less usesful enough to be captured and
+##   Shared for reuse
+
+[alias]
+
+  tree = log --graph --full-history --all --color --date=short \
+    --pretty=format:\"%Cred%x09%h %Creset%ad%Cblue%d %Creset %s \
+    %C(bold)(%an)%Creset\"
+  addremove = add -A .
+  undo-commit = reset --soft HEAD^
+  squash-previous = !git reset --soft HEAD~$1 && git commit -m\"$(git log   --format=%B  HEAD..HEAD@{1})\"
+  commit-again = !git commit -m\"$(git log --format=%B  HEAD..HEAD@{1})\"
+  co = checkout

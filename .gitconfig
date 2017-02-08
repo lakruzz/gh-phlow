@@ -23,12 +23,11 @@
     --pretty=format:\"%Cred%x09%h %Creset%ad%Cblue%d %Creset %s \
     %C(bold)(%an)%Creset\"
   addremove = add -A .
-  co = checkout
   work-on	= "!f() { \
     BRANCHNAME=`git issue-branch $1`; \
     git fetch origin; \
-    git co $BRANCHNAME   2> /dev/null \
-    || git co -b $BRANCHNAME origin/`git default-branch`; \
+    git checkout $BRANCHNAME   2> /dev/null \
+    || git checkout -b $BRANCHNAME origin/`git default-branch`; \
     git issue-wip $1; \
     ghi assign $1; \
   }; f"
@@ -79,7 +78,7 @@
         echo 'Come on! - You can't deliver this branch!; \
       else \
         git pull --rebase \
-  	&& git co `git default-branch` \
+  	&& git checkout `git default-branch` \
   	&& git pull \
   	&& git merge $BRANCH \
         && git branch -m $BRANCH delivered/$BRANCH \
@@ -87,7 +86,7 @@
       fi; \
     }; f"
   purge-all-delivered = "!f() { \
-    git co `git default-branch`; \
+    git checkout `git default-branch`; \
     git branch | grep 'delivered/' \
     | sed 's/delivered\\///g' \
     | xargs -I %br sh -c 'git branch -D delivered/%br; \
