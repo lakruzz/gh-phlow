@@ -18,18 +18,44 @@
 
 [alias]
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ## The Phlow >>
-  tree = log --graph --full-history --all --color --date=short \
-    --pretty=format:\"%Cred%x09%h %Creset%ad%Cblue%d %Creset %s \
-    %C(bold)(%an)%Creset\"
   addremove = add -A .
   work-on	= "!f() { \
     BRANCHNAME=`git issue-branch $1`; \
-    git fetch origin; \
-    git checkout $BRANCHNAME   2> /dev/null \
-    || git checkout -b $BRANCHNAME origin/`git default-branch`; \
-    git issue-wip $1; \
-    ghi assign $1; \
+		DELIVEREDBRANCHNAME=delivered/$BRANCHNAME; \
+		if [[ `git branch --list $DELIVEREDBRANCHNAME` =~ $DELIVEREDBRANCHNAME ]]; \
+		then \
+  		git branch -m $DELIVEREDBRANCHNAME $BRANCHNAME; \
+	  	git checkout $BRANCHNAME; \
+		else \
+	  	git checkout $BRANCHNAME   2> /dev/null; \
+			git fetch origin \
+		  && git checkout -b $BRANCHNAME origin/`git default-branch`; \
+		fi; \
+		if [[ `git status` =~ "fast-forwarded" ]]; \
+		then \
+			git pull; \
+		fi; \
+		git issue-wip $1; \
   }; f"
   issue-branch = "!f() { \
     MATCH=[#↑]$1:; \
@@ -71,6 +97,13 @@
     git addremove; \
     git commit -F ~/WRAPUP_EDITMSG; \
     rm ~/WRAPUP_EDITMSG; \
+  }; f"
+  issue-no-from-branch = "!f(){ \
+    BRANCH=`git symbolic-ref --short HEAD`; \
+    if [[ $BRANCH =~ ^([[:digit:]]+) || $BRANCH =~ ^delivered/([[:digit:]]+) ]]; \
+    then \
+      echo ${BASH_REMATCH[1]}; \
+    fi; \
   }; f"
   deliver = "!f() { \
     BRANCH=`git symbolic-ref --short HEAD`; \
