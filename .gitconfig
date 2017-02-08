@@ -52,7 +52,18 @@
     | sed s/.git$//g; \
   }; f"
   issue-wip = "!f() { \
-    ghi label $1 'Status - in progress'; \
+		if [[ $1 =~ ^[[:digit:]]+$ ]]; \
+		then  \
+  		ghi assign $1 > /dev/null; \
+      ghi label $1 'Status - in progress' > /dev/null; \
+  		ghi open $1; \
+		fi; \
+  }; f"
+  issue-nwip = "!f() { \
+    if [[ $1 =~ ^[[:digit:]]+$ ]]; \
+    then  \
+      ghi label $1 -d 'Status - in progress'; \
+    fi; \
   }; f"
   wrapup = "!f() { \
     MSG='close #'`git symbolic-ref --short HEAD | sed 's/-/ /g'`; \
@@ -68,23 +79,25 @@
       echo 'Come on! - You can't deliver this branch!; \
     else \
       git push origin $BRANCH:ready/$BRANCH \
-      && git branch -m delivered/$BRANCH; \
+      && git branch -m delivered/$BRANCH \
+			&& git issue-nwip `git issue-no-from-branch`; \
     fi; \
   }; f"
   local-deliver = "!f() { \
-      BRANCH=`git symbolic-ref --short HEAD`; \
-      if [[ $BRANCH =~ ^delivered/ || $BRANCH == `git default-branch` ]]; \
-      then \
-        echo 'Come on! - You can't deliver this branch!; \
-      else \
-        git pull --rebase \
-  	&& git checkout `git default-branch` \
-  	&& git pull \
-  	&& git merge $BRANCH \
-        && git branch -m $BRANCH delivered/$BRANCH \
-  	&& git push; \
-      fi; \
-    }; f"
+    BRANCH=`git symbolic-ref --short HEAD`; \
+    if [[ $BRANCH =~ ^delivered/ || $BRANCH == `git default-branch` ]]; \
+    then \
+      echo 'Come on! - You can't deliver this branch!; \
+    else \
+		  git pull --rebase \
+		  && git checkout `git default-branch` \
+			&& git pull \
+			&& git merge $BRANCH \
+      && git branch -m $BRANCH delivered/$BRANCH \
+			&& git push \
+			&& git issue-nwip `git issue-no-from-branch`; \
+    fi; \
+  }; f"
   purge-all-delivered = "!f() { \
     git checkout `git default-branch`; \
     git branch | grep 'delivered/' \
