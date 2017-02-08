@@ -94,8 +94,12 @@
     git fetch --prune; \
   }; f "
   get-ghi-token = "!f(){ \
-	 USER=`git config --global --get github.user`; \
-	 security find-internet-password -a $USER -s github.com -l ghi\\ token -w; \
+	 TOKEN=`git config --global --get ghi.token`; \
+	 if [[ $TOKEN =~ ^! ]];\
+	 then \
+		 eval `echo $TOKEN | sed 's/^!//'`; \
+	 else \
+	   echo $TOKEN; \
+	 fi;\
 	}; f"
-
 ## << The Phlow
