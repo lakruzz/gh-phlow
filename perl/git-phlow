@@ -19,7 +19,8 @@ our %options;
 our %valid_commands = (
   addremove        => '',
   defaultbranch    => '',
-  issuebranch      => ''
+  issuebranch      => '',
+  issue_no_from_branch => ''
 );
 
 GetOptions(
@@ -225,6 +226,18 @@ sub ghapi ($){
   my $cmd = 'curl -s -u :'.gettoken().' '.$opt{uri};
   my $raw_json = &cmd( command => $cmd, verbose => $options{verbose});
   return JSON::PP->new->utf8->relaxed([1])->decode($raw_json);
+};
+
+sub issue_no_from_branch (){
+  my $retval;
+  my $branch = &cmd( command => "git symbolic-ref --short HEAD",
+    verbose => $options{verbose});
+  print "BRANCH: $branch\n";
+  if ( $branch =~ /^(\d+)/ || $branch =~ /^delivered\/(\d+)/){
+    print "Hey\n";
+    $retval = $1;
+  };
+  print $retval."\n";
 };
 
 
