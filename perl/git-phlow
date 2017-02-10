@@ -17,8 +17,9 @@ our %options;
 
 # The while-listed phlow commands
 our %valid_commands = (
-  addremove => '',
-  defaultbranch => '',
+  addremove        => '',
+  defaultbranch    => '',
+  issuebranch      => ''
 );
 
 GetOptions(
@@ -32,7 +33,11 @@ our $Phlowcommand = shift;
 
 validate_context();
 
-eval $Phlowcommand ;
+eval '&'.$Phlowcommand.'(@ARGV)';
+if ($@){
+  warn $@;
+}
+
 
 
 exit(0);
@@ -107,25 +112,6 @@ Hereafter you will hvae access to all the phlow commands like this
 
 =cut
 
-sub validate_context(){
-
-	unless (defined $valid_commands{$Phlowcommand}){
-		print STDERR "$Phlowcommand is not a legal command\n";
-		pod2usage(-exitval => 1, -verbose => 1)
-	};
-
-  defined $options{help} && pod2usage(
-   -verbose => 99,
-   -exitval => 1,
-   -sections => [ "COMMANDS/".$Phlowcommand ]
-  );
-
-  defined( $options{verbose} ) ||  do {$options{verbose} = 0};
-
-  $options{verbose} && print "Phlow $Phlowcommand\n";
-
-};
-
 sub addremove(){
 
 =head2 addremove
@@ -157,6 +143,21 @@ C<defaultbranch> Returns the default branch. This is a setting on the GitHub rep
 
 ######## Non exposed helper functions
 
+sub validate_context(){
+	unless (defined $valid_commands{$Phlowcommand}){
+		print STDERR "$Phlowcommand is not a legal command\n";
+		pod2usage(-exitval => 1, -verbose => 1)
+	};
+  defined $options{help} && pod2usage(
+   -verbose => 99,
+   -exitval => 1,
+   -sections => [ "COMMANDS/".$Phlowcommand ]
+  );
+  defined( $options{verbose} ) ||  do {$options{verbose} = 0};
+  $options{verbose} && print "Phlow $Phlowcommand\n";
+};
+
+
 sub hubname(){
   my $remoteurl = cmd(
     command => 'git config --get remote.origin.url',
@@ -164,6 +165,7 @@ sub hubname(){
   my ($srv, $hubname) = split /:/, $remoteurl;
   $hubname =~ s@//github.com/@@g;
   $hubname =~ s/.git$//g;
+  chomp($hubname);
   return $hubname;
 }
 
@@ -171,6 +173,7 @@ sub gettoken(){
   my $token = cmd(
     command => 'git config --global --get ghi.token',
     verbose => $options{verbose});
+  chomp($token);
   if ($token =~ s/^!//){
     $token = cmd(
       command => $token,
@@ -181,25 +184,58 @@ sub gettoken(){
 }
 
 sub cmd ($) {
-
-    my %opt = @_;
-    croak "input parameter for key 'command' required" unless ( $opt{command} );
-    defined( $opt{die_on_err} )   ||  do {$opt{die_on_err}   = 1};
-		defined( $opt{merge_errout} ) ||  do {$opt{merge_errout} = 1};
-		defined( $opt{verbose} )      ||  do {$opt{verbose}      = 0};
-		defined( $opt{return_array} ) ||  do {$opt{return_array} = 0};
-
-    my $cmd = ($opt{merge_errout})? $opt{command} . ' 2>&1' : $opt{command};
-		$opt{verbose} && print $opt{command}."\n";
-    my @res = qx($cmd);
-
-    # Report errors unless we expect the call to generate non-zero exit value
-    unless ( $opt{err_ok} ) {
-        if ($?) {
-            croak "Execution of [$cmd] returned a non-zero value (".( ($?) / 256 ).")";
-        }
-    };
-    return ( $opt{return_array} ) ? @res : join( '', @res );
+  my %opt = @_;
+  croak "input parameter for key 'command' required" unless ( $opt{command} );
+  defined( $opt{die_on_err} )   ||  do {$opt{die_on_err}   = 1};
+	defined( $opt{merge_errout} ) ||  do {$opt{merge_errout} = 1};
+	defined( $opt{verbose} )      ||  do {$opt{verbose}      = 0};
+	defined( $opt{return_array} ) ||  do {$opt{return_array} = 0};
+  my $cmd = ($opt{merge_errout})? $opt{command} . ' 2>&1' : $opt{command};
+	$opt{verbose} && print $opt{command}."\n";
+  my @res = qx($cmd);
+  # Report errors unless we expect the call to generate non-zero exit value
+  unless ( $opt{err_ok} ) {
+    if ($?) {
+      croak "Execution of [$cmd] returned a non-zero value (".( ($?) / 256).")";
+    }
+  };
+  return ( $opt{return_array} ) ? @res : join( '', @res );
 }
+
+sub issuebranch ($) {
+  my $issue = shift;
+  croak 'I want an integer!' unless ($issue =~ /^\d+$/);
+  croak "There's only room for one argument" if defined(shift);
+  my $api = 'https://api.github.com/repos/'.hubname().'/issues/'.$issue;
+  my $json = ghapi( uri => $api);
+  my $branchname = $json->{title};
+  if (defined $branchname){
+    $branchname =~ s/[\!\.\"\£\$€\%\&\?\*\@\:\;\\\/\[\]\,\:\'\+]//g;
+    $branchname = "$issue-".$branchname;
+    $branchname =~ s/[ _]/-/g;
+    while ($branchname =~ s/--/-/g){};
+    $branchname =~ s/-$//g;
+  }
+  print lc($branchname)."\n";
+};
+
+sub ghapi ($){
+  my %opt = @_;
+  croak "'uri' is required" unless defined($opt{uri});
+  my $cmd = 'curl -s -u :'.gettoken().' '.$opt{uri};
+  my $raw_json = &cmd( command => $cmd, verbose => $options{verbose});
+  return JSON::PP->new->utf8->relaxed([1])->decode($raw_json);
+};
+
+
+
+
+#  MATCH=[#↑]$1:; \
+#  ghi show $1 2>/dev/null \
+#  | grep $MATCH \
+#  | sed   s/$MATCH/$1/g \
+#  | sed 's/ /-/g' \
+#  | sed s/[:\\'\\/\\\"\\?]//g; \
+
 
 __END__
