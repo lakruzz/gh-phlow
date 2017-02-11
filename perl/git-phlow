@@ -20,11 +20,13 @@ our %valid_commands = (
   addremove        => '',
   defaultbranch    => '',
   issuebranch      => '',
-  issue_no_from_branch => ''
+  issue_no_from_branch => '',
+  web => ''
 );
 
 GetOptions(
   (
+    "issue=s"              => \$options{issue},
     "verbose!"             => \$options{verbose},
 		"help"                 => \$options{help},
     "man"                  => sub { pod2usage(-exitval => 0, -verbose => 2) }	)
@@ -112,6 +114,30 @@ Hereafter you will hvae access to all the phlow commands like this
 =head1 COMMANDS
 
 =cut
+
+sub web($) {
+=head2 web
+
+C<git phlow web [--issue number]>
+
+Opens your current context in a web browser. If you are on an issue branch, then it will take you directly to the corresponding issue on GitHub. Otherwise it will take you to the repo's web site.
+
+=cut
+  my $url = 'https://github.com/';
+  my $hubname = hubname();
+  if (defined($hubname)){
+    $url =$url.$hubname;
+    if($options{issue}){
+      croak 'I want an integer!' unless ($options{issue} =~ /^\d+$/);
+      $url = $url.'/issues/'.$options{issue};
+    } else{
+      my $issue = issue_no_from_branch();
+      print "DEBUG: \$issue: $issue\n";
+      defined($issue) && do {$url = $url.'/issues/'.$issue};
+    }
+  }
+  `open $url`;
+}
 
 sub addremove(){
 
@@ -232,23 +258,13 @@ sub issue_no_from_branch (){
   my $retval;
   my $branch = &cmd( command => "git symbolic-ref --short HEAD",
     verbose => $options{verbose});
-  print "BRANCH: $branch\n";
   if ( $branch =~ /^(\d+)/ || $branch =~ /^delivered\/(\d+)/){
-    print "Hey\n";
     $retval = $1;
   };
-  print $retval."\n";
+  return $retval;
 };
 
 
-
-
-#  MATCH=[#↑]$1:; \
-#  ghi show $1 2>/dev/null \
-#  | grep $MATCH \
-#  | sed   s/$MATCH/$1/g \
-#  | sed 's/ /-/g' \
-#  | sed s/[:\\'\\/\\\"\\?]//g; \
 
 
 __END__
