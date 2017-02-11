@@ -17,10 +17,11 @@ our %options;
 
 # The white-listed phlow commands
 our %valid_commands = (
-  addremove        => '',
-  defaultbranch    => '',
-  issuebranch      => '',
-  web => ''
+  addremove        => [1],
+  defaultbranch    => [1],
+  issuebranch      => [1],
+  web              => [1],
+  mkalias          => [0]
 );
 
 GetOptions(
@@ -165,6 +166,14 @@ C<defaultbranch> Returns the default branch. This is a setting on the GitHub rep
   my $raw_json = cmd( command => $cmd, verbose => $options{verbose});
   my $json = JSON::PP->new->utf8->relaxed([1])->decode($raw_json);
   print $json->{default_branch}."\n";
+}
+
+sub mkalias (){
+  foreach my $cmd (keys %valid_commands){
+    my $aliascmd = "git config --global --add alias.$cmd \"phlow $cmd\"";
+    $valid_commands{$cmd}[0] &&
+    print $cmd." => ".$aliascmd."\n";
+  }
 }
 
 ######## Non exposed helper functions
