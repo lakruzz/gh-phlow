@@ -27,6 +27,7 @@ our %valid_commands = (
 GetOptions(
   (
     "issue=s"              => \$options{issue},
+    "force"                => \$options{force},
     "verbose!"             => \$options{verbose},
 		"help"                 => \$options{help},
     "man"                  => sub { pod2usage(-exitval => 0, -verbose => 2) }	)
@@ -169,10 +170,45 @@ C<defaultbranch> Returns the default branch. This is a setting on the GitHub rep
 }
 
 sub mkalias (){
-  foreach my $cmd (keys %valid_commands){
-    my $aliascmd = "git config --global --add alias.$cmd \"phlow $cmd\"";
-    $valid_commands{$cmd}[0] &&
-    print $cmd." => ".$aliascmd."\n";
+
+=head2 mkalias
+
+C<git phlow mkalias [--force]>
+
+Creates the aliases foreach phlow command. Which will enable you to use the flow commands as native git commands:
+
+   git workon 3
+
+Instead of the full length phlow command:
+
+  git phlow workon 3
+
+It will not overwrite existing aliases with clashing names unless you applu C<--force>
+
+=cut
+
+  foreach my $cmd (sort keys %valid_commands){
+    my $alias = "phlow $cmd";
+    if ($valid_commands{$cmd}[0]){
+      my $curalias = cmd(
+        command => "git config --global --get alias.$cmd",
+        verbose => $options{verbose},
+        die_on_err => 0);
+      chomp($curalias);
+      my $action = ($curalias ne '')? "Overwriting" : "Creating";
+      if ($curalias ne $alias){
+        if ($curalias ne '' && not defined($options{force})){
+          print STDERR "Not overwriting the existing alias '$cmd' unless you apply --force\n";
+        } else {
+          print "$action the '$cmd' alias\n";
+          cmd(
+            command => "git config --global --add alias.$cmd \"$alias\"",
+            verbose => $options{verbose});
+        }
+      } else{
+        print "The alias '$cmd' is already set correct\n";
+      }
+    }
   }
 }
 
@@ -229,7 +265,7 @@ sub cmd ($) {
 	$opt{verbose} && print $opt{command}."\n";
   my @res = qx($cmd);
   # Report errors unless we expect the call to generate non-zero exit value
-  unless ( $opt{err_ok} ) {
+  unless ( not $opt{die_on_err} ) {
     if ($?) {
       croak "Execution of [$cmd] returned a non-zero value (".( ($?) / 256).")";
     }
