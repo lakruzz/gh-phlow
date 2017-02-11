@@ -1,26 +1,25 @@
 #!/usr/bin/perl
 require 5.000;
-use strict;                # http://perldoc.perl.org/strict.html
-use Carp;                  # http://perldoc.perl.org/Carp.html
-use Cwd;                   # http://perldoc.perl.org/Cwd.html
+use strict;
+use Carp;
+use Cwd;
 
 # File version
 our $VERSION    = "1.0";                             #major.minor
 our $PATCH      = "1";                               #patch
 
-use Getopt::Long;          # http://perldoc.perl.org/Getopt/Long.html
-use Pod::Usage;            # http://perldoc.perl.org/Pod/Usage.html
+use Getopt::Long;
+use Pod::Usage;
 use JSON::PP;
 
 # Holds the global variables that are used to cache the value of our options
 our %options;
 
-# The while-listed phlow commands
+# The white-listed phlow commands
 our %valid_commands = (
   addremove        => '',
   defaultbranch    => '',
   issuebranch      => '',
-  issue_no_from_branch => '',
   web => ''
 );
 
