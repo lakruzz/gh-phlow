@@ -21,7 +21,8 @@ our %valid_commands = (
   defaultbranch    => [1],
   issuebranch      => [1],
   web              => [1],
-  mkalias          => [0]
+  mkalias          => [0],
+  workon           => [1]
 );
 
 GetOptions(
@@ -161,12 +162,7 @@ sub defaultbranch(){
 C<defaultbranch> Returns the default branch. This is a setting on the GitHub repository.
 
 =cut
-
-  my $cmd = 'curl -s -u :'.gettoken()
-    .' https://api.github.com/repos/'.hubname();
-  my $raw_json = cmd( command => $cmd, verbose => $options{verbose});
-  my $json = JSON::PP->new->utf8->relaxed([1])->decode($raw_json);
-  print $json->{default_branch}."\n";
+  print get_default_branch()."\n";
 }
 
 sub mkalias (){
@@ -210,6 +206,94 @@ It will not overwrite existing aliases with clashing names unless you applu C<--
       }
     }
   }
+}
+
+sub issuebranch($){
+  my $issue = shift;
+  print issue_branch_name($issue)."\n";
+}
+
+sub workon ($){
+  my $issue = shift;
+  croak 'I want an integer!' unless ($issue =~ /^\d+$/);
+  croak "There's only room for one argument" if defined(shift);
+
+  my $branchname = issue_branch_name( $issue);
+  my $shared_branchname = 'shared/'.$branchname;
+  my $delivered_branchname = 'delivered/'.$branchname;
+
+  # Get a list of branches that can be reused
+  my @branches = cmd(
+    command => "git branch --list $branchname $shared_branchname $delivered_branchname",
+    verbose => $options{verbose},
+    die_on_err => 0,
+    return_array => 1);
+
+  # Chomp and clean up output from the git command, transform to a map
+  if (@branches){
+    my %branchmap;
+    foreach my $existb (@branches){
+      $existb =~ s/^\**\s*//;
+      chomp($existb);
+      $branchmap{$existb} = '';
+    }
+
+    # If there are more then one potentially reusable branch then '--force' is required to proceed
+    if (scalar @branches >1 && not $options{force}){
+      print "Hmm - seems like you have too many branches related to issue '$issue' hanging around:\n\n";
+
+      foreach (sort keys %branchmap){
+        print  "  $_\n";
+      }
+
+      print "\nThere can be only one! Either clean up a little or run again with '--force'\n";
+
+      exit 1;
+    }
+
+    if (defined($branchmap{$branchname})){
+      print "Reusing branch '$branchname'\n";
+      exit 0;
+    }
+
+    if (defined($branchmap{$shared_branchname})){
+      print "Reusing branch '$shared_branchname'\n";
+      exit 0;
+    }
+
+    if (defined($branchmap{$delivered_branchname})){
+      print "Reusing branch '$delivered_branchname'\n";
+      exit 0;
+    }
+
+  } else{ # no branches ot reuse
+    cmd (
+      command => "git fetch origin",
+      verbose => $options{verbose} );
+    cmd (
+      command => "git checkout -b $branchname origin/".get_default_branch(),
+      verbose => $options{verbose})
+  };
+
+
+
+
+  # BRANCHNAME=`git issue-branch $1`; \
+  # DELIVEREDBRANCHNAME=delivered/$BRANCHNAME; \
+  # if [[ `git branch --list $DELIVEREDBRANCHNAME` =~ $DELIVEREDBRANCHNAME ]]; \
+  # then \
+  #   git branch -m $DELIVEREDBRANCHNAME $BRANCHNAME; \
+  #   git checkout $BRANCHNAME; \
+  # else \
+  #   git checkout $BRANCHNAME   2> /dev/null; \
+  #   git fetch origin \
+  #   && git checkout -b $BRANCHNAME origin/`git default-branch`; \
+  # fi; \
+  # if [[ `git status` =~ "fast-forwarded" ]]; \
+  # then \
+  #   git pull; \
+  # fi; \
+  # git issue-wip $1; \
 }
 
 ######## Non exposed helper functions
@@ -273,7 +357,7 @@ sub cmd ($) {
   return ( $opt{return_array} ) ? @res : join( '', @res );
 }
 
-sub issuebranch ($) {
+sub issue_branch_name ($) {
   my $issue = shift;
   croak 'I want an integer!' unless ($issue =~ /^\d+$/);
   croak "There's only room for one argument" if defined(shift);
@@ -287,7 +371,7 @@ sub issuebranch ($) {
     while ($branchname =~ s/--/-/g){};
     $branchname =~ s/-$//g;
   }
-  print lc($branchname)."\n";
+  return lc($branchname);
 };
 
 sub ghapi ($){
@@ -307,6 +391,16 @@ sub issue_no_from_branch (){
   };
   return $retval;
 };
+
+sub get_default_branch(){
+  my $cmd = 'curl -s -u :'.gettoken()
+    .' https://api.github.com/repos/'.hubname();
+  my $raw_json = &cmd(
+    command => $cmd,
+    verbose => $options{verbose});
+  my $json = JSON::PP->new->utf8->relaxed([1])->decode($raw_json);
+  return $json->{default_branch};
+}
 
 
 
