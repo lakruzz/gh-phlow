@@ -274,6 +274,8 @@ sub sync(){
 
     git phlow sync [--force]
 
+=over
+
 =item C<< B<--force> >>
 
 C<force> is reqiured if the rebase is causing a merge conflict to managed manually. In other words using C<sync> I<without> force is guaranteed to either synchronize yor branch successfully - or do nothing.

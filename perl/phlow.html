@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>phlow documentation</title>
+<title></title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@osx219.apple.com" />
 </head>
@@ -16,12 +16,15 @@
   <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
   <li><a href="#OPTIONS">OPTIONS</a></li>
   <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
-  <li><a href="#OUTSTANDINGS">OUTSTANDINGS</a></li>
-  <li><a href="#FUNCTIONS">FUNCTIONS</a>
+  <li><a href="#COMMANDS">COMMANDS</a>
     <ul>
-      <li><a href="#validate_context">validate_context</a></li>
-      <li><a href="#merge">merge</a></li>
-      <li><a href="#pod2html">pod2html</a></li>
+      <li><a href="#web">web</a></li>
+      <li><a href="#addremove">addremove</a></li>
+      <li><a href="#defaultbranch">defaultbranch</a></li>
+      <li><a href="#mkalias">mkalias</a></li>
+      <li><a href="#sync">sync</a></li>
+      <li><a href="#issuebranch">issuebranch</a></li>
+      <li><a href="#workon">workon</a></li>
     </ul>
   </li>
 </ul>
@@ -30,7 +33,7 @@
 
 <p>This script is related to &quot;The Phlow&quot; described in detail in <a href="http://www.praqma.com/stories/a-pragmatic-workflow/">A Praqmatic Workflow</a></p>
 
-<p>It provides the various features that are required to support automated integration of worker branches and hereby enable an automated pretested integration strategy on CI serveres.</p>
+<p>It provides the various features that are required to support all user scenarios of the Phlow.</p>
 
 <dl>
 
@@ -62,138 +65,210 @@
 
 <h1 id="SYNOPSIS">SYNOPSIS</h1>
 
-<pre><code> phlow -integration branch -worker branch [-[no]squash]
- phlow -help | -man</code></pre>
+<pre><code>  git phlow &lt;command&gt; [options] [arguments]
+  git phlow --man|--usage</code></pre>
+
+<p>All options can be shortend to their shortest unambigious form and you can use one or two dashes in front of options, as your temper prefers - we don&#39;t care.</p>
+
+<p>E.g. <code>-u</code> can substitute <code>--usage</code>.</p>
 
 <h1 id="OPTIONS">OPTIONS</h1>
 
+<p>The valid phlow commands are listed below.</p>
+
+<pre><code>  phlow addremove
+  phlow defaultbranch
+  phlow issuebranch issue
+  phlow web [--issue number]
+  phlow mkalias [--force]
+  workon issue [--force]
+  sync [--force]</code></pre>
+
+<p>The following switches are accepted by all commands:</p>
+
 <dl>
 
-<dt id="worker-branch"><b>-worker branch</b></dt>
+<dt id="verbose"><code><b>--verbose</b></code></dt>
 <dd>
 
-<p>branch is the source of your commit.</p>
+<p>List&#39;s all commands that are passed on to the shell - quite noisy, but useful if you wann learn what&#39;s happening under the hood</p>
 
 </dd>
-<dt id="integration-branch"><b>-integration branch</b></dt>
+<dt id="usage"><code><b>--usage</b></code></dt>
 <dd>
 
-<p>branch is the target for your integration.</p>
-
-</dd>
-<dt id="no-squash"><b>-[no]squash</b></dt>
-<dd>
-
-<p>Will squash commits if source contains more than one new commit. -squash is default. -nosquash will integrate all commets to the target branch as is.</p>
-
-</dd>
-<dt id="help"><b>-help</b></dt>
-<dd>
-
-<p>Print a brief help message and exits.</p>
-
-</dd>
-<dt id="man"><b>-man</b></dt>
-<dd>
-
-<p>Prints the manual page and exits.</p>
+<p>Give detailed help to each individual command.</p>
 
 </dd>
 </dl>
 
 <h1 id="DESCRIPTION">DESCRIPTION</h1>
 
-<p>The script is helping implementing the git gymnastics required on the CI server to support &quot;the Phlow&quot;.</p>
+<p>The script is helping implementing the git gymnastics required both as an end user and on the CI servers to support &quot;the Phlow&quot;.</p>
 
-<p>It&#39;s essentially the features developed in the Jenkins plugin called <a href="https://wiki.jenkins-ci.org/display/JENKINS/Pretested+Integration+Plugin">&quot;Pretested Integration Plugin&quot;</a> but wrapped up in a script instead of a Jenkins specifc plugin.</p>
+<p>The most simple use of it is to clone the repo to your PC, and then link the perl folder to a directory that is in your <code>$PATH</code> like this:</p>
 
-<p>The vision is to create a generic way of supporting the Phlow, that is independent of what CI server you&#39;ve chosen. Regardless if you are on Travis, Concourse, GitLab CI - or <i>whatever</i>, this script and the features it provides are the only thing you need.</p>
+<pre><code>    git clone https://github.com/Praqma/the-phlow.git
+    ln -s ./the-phlow/perl ~/opt/phlow</code></pre>
 
-<p>The most simple use of it is like this:</p>
+<p>and then add <code>/Users/you/opt/phlow</code> to your <code>$PATH</code> in <code>.zshrc</code> or <code>.bashrc</code> or what ever you are using.</p>
 
-<p><code>phlow.pl -integration master -worker ready/my-worker</code></p>
+<p>Hereafter you will have access to all the phlow commands like this</p>
 
-<p>The script will then do the necessary merge, leaving you the workspace you can use for your toll-gate test.</p>
+<pre><code>    git phlow addremove
+    git phlow workon
+    ...</code></pre>
 
-<h1 id="OUTSTANDINGS">OUTSTANDINGS</h1>
+<p>You can even make the into &#39;native&#39; git commands by running the commands</p>
 
-<p>This script is still being developed. Some paths aren&#39;t implemented yet <code>-nosquash</code> is supported, but <code>-squash</code> isn&#39;t.</p>
+<pre><code>    git phlow mkalias</code></pre>
 
-<p>Also the script will need to run again after you have run the toll-gate test, and dependant on wether you had success or failure it will either push to origin or not - and it will do some necessary branch cleanup.</p>
+<p>Then you will be able to execut the same commands as</p>
 
-<p>Any fatures you would like to see, you are welcome to suggest and contribute.</p>
+<pre><code>    git addremove
+    git workon
+    ...</code></pre>
 
-<h1 id="FUNCTIONS">FUNCTIONS</h1>
+<h1 id="COMMANDS">COMMANDS</h1>
 
-<h2 id="validate_context">validate_context</h2>
+<h2 id="web">web</h2>
 
-<p><b>Input:</b> void</p>
-
-<p>The function checks that all options are applied correct and unambiguously and it check that the execution takes place in a valid context. The test operates on the global variables that was used to cache the parameters. (by convention all variables named <code>$Sw_...</code>).</p>
-
-<h2 id="merge">merge</h2>
-
-<p>Will merge from one branch to another</p>
-
-<p><b>Input:</b> $%options</p>
-
-<p>A reference to hash, containing the options to operate from. Typically the reference will be defined as part of the function call itself.</p>
-
-<p><b>Example:</b></p>
-
-<p><code>merge( {from =&gt; &#39;ready/my-branch&#39;, to =&gt; &#39;master&#39;, squash =\&gt; 1, rebase =\&gt; 1} );</code></p>
+<pre><code>    git phlow web [[--issue] number]</code></pre>
 
 <dl>
 
-<dt id="from-string-required"><b>from</b> (string) <i>[required]</i></dt>
+<dt id="issue-number"><code><b> --issue number</b></code></dt>
 <dd>
-
-<p>The branch to merge from</p>
 
 </dd>
-<dt id="to-string-required"><b>to</b> (string) <i>[required]</i></dt>
+<dt id="number"><code><b> number</b></code></dt>
 <dd>
 
-<p>The branch to merge to</p>
+<p><code>number</code> is an integer refering to a GitHub issue in the context of the current repository. The number can be omitted. It will default to the issue number of your current branch context.</p>
 
-</dd>
-<dt id="squash-boolean-optional"><b>squash</b> (boolean) <i>[optional]</i></dt>
-<dd>
-
-<p>Indicates if more than one commit is allowed, or if multiple commits should be squashed before the merge.</p>
-
-<p>Default is 1 (true)</p>
-
-</dd>
-<dt id="rebase-boolean-optional"><b>rebase</b> (boolean) <i>[optional]</i></dt>
-<dd>
-
-<p>Indicates if the from branch should be rebased against the to branch before the merge.</p>
-
-<p>Default is 1 (true)</p>
+<p>Hell, even the switch can be ommitted, so you can apply the number just as an argument.</p>
 
 </dd>
 </dl>
 
-<h2 id="pod2html">pod2html</h2>
+<p>Opens your current context in a web browser. If you are on an issue branch, or your apply an issue number in the switch, it take you directly to the corresponding issue on GitHub. Otherwise it will take you to the repo&#39;s web site.</p>
 
-<p><b>Input:</b> $title</p>
+<h2 id="addremove">addremove</h2>
 
-<p>The title to apply to the generated html file</p>
+<pre><code>    addremove</code></pre>
+
+<p>Doesn&#39;t take any parametes.</p>
+
+<p>It&#39;s implementing Mercurials command of the same name. It simply synchronizes your current work tree with the index; It adds the files you have added or modified and removes the files that you may removed.</p>
+
+<h2 id="defaultbranch">defaultbranch</h2>
+
+<pre><code>    defaultbranch</code></pre>
+
+<p>Doesn&#39;t take any parametes.</p>
+
+<p>Returns the default branch. This is a setting on the GitHub repository.</p>
+
+<h2 id="mkalias">mkalias</h2>
+
+<pre><code>    git phlow mkalias [--force]</code></pre>
 
 <dl>
 
-<dt id="title-string-optional">title (string) <i>[optional]</i></dt>
+<dt id="force"><code><b>--force</b></code></dt>
 <dd>
 
-<p>Default set to the name of the file + &quot;documentation&quot;. E.g.</p>
+<p><code>force</code> is required if an alias already exist with the same name, and the configuration to set is different to the one that there already is. In other words using <code>mkalias</code> <i>without</i> force, is guaranteed to be non intrusive to your git config setup.</p>
 
 </dd>
 </dl>
 
-<p>Generates a html file from the embedded pod. In a file with same name but <code>.html</code> extension and in teh same location as the script itself.</p>
+<p>Creates the aliases foreach phlow command. Which will enable you to use the flow commands as native git commands:</p>
 
-<p>If such a file exist already, it will be over written.</p>
+<pre><code>   git workon 3</code></pre>
+
+<p>Instead of the full length phlow command:</p>
+
+<pre><code>  git phlow workon 3</code></pre>
+
+<p>It will not overwrite existing aliases with clashing names unless you apply <code>--force</code></p>
+
+<h2 id="sync">sync</h2>
+
+<pre><code>    git phlow sync [--force]</code></pre>
+
+<dl>
+
+<dt id="force1"><code><b>--force</b></code></dt>
+<dd>
+
+<p><code>force</code> is reqiured if the rebase is causing a merge conflict to managed manually. In other words using <code>sync</code> <i>without</i> force is guaranteed to either synchronize yor branch successfully - or do nothing.</p>
+
+</dd>
+</dl>
+
+<p>Sync operates in the context of the currently checked out branch.</p>
+
+<p>Sync will rebase against the branch your are tracking remotely, if&#39;s guranteed to be safe. If fast-forwards if it can, if a merge is needed, then it will dry-run it and see if can be done without merge conflicts.</p>
+
+<p>If a mege conflict is unavoidable you will be warned.</p>
+
+<p>If you run with <code>--force</code> it will continue into the rebase, even if causes a conflict - and you will have to resolve it yourself.</p>
+
+<p>But in short - <code>sync</code> is guarantted to be safe as long as you don&#39;t use the <code>--force</code> switch.</p>
+
+<h2 id="issuebranch">issuebranch</h2>
+
+<pre><code>    issuebranch issue</code></pre>
+
+<dl>
+
+<dt id="issue"><code><b>issue</b></code></dt>
+<dd>
+
+<p>Issue is refering to the issue number of an issue on GitHub, in the context of your current repository.</p>
+
+</dd>
+</dl>
+
+<p>Takes an integer as argument and returns the branch name, that will be used for that issue, based on it&#39;s current title.</p>
+
+<h2 id="workon">workon</h2>
+
+<pre><code>    workon issue [--force]</code></pre>
+
+<dl>
+
+<dt id="force2"><code><b>--force</b></code></dt>
+<dd>
+
+<p>Will force a rebase even if it leads to a merge conflict. It&#39;s teh same <i>force</i> as describe in <code>git phlow sync</code>.</p>
+
+</dd>
+</dl>
+
+<p>Takes an integer as argument - refering to the issue numner on GitHub issues. It will create a working branch for that issue and check it out.</p>
+
+<p>If a reusable branch exist then it will rename it, check it out and synchronize it. Reusabel branches are any of the following</p>
+
+<ul>
+
+<li><p><code>&lt;issue_branch_name&gt;</code></p>
+
+</li>
+<li><p><code>shared/&lt;issue_branch_name&gt;</code></p>
+
+</li>
+<li><p><code>delivered/&lt;issue_branch_name&gt;</code></p>
+
+</li>
+</ul>
+
+<p>If more reusable brances exists, then <code>--force</code> is required, for anything to happen. The branch to reuse is the first one found in the order listed above.</p>
+
+<p><code>workon</code> can be used to all swapping to and from ongoing work - even work that is shared (parked) or work that is already delivered and needs to be reobtrained.</p>
+
+<p>If a reusable branch is found, then it is synced with is&#39;t remote (see <code>gitp hlow sync</code>). The synce is guaranteed to on be carreid out if it&#39;s free of merge conflicts. To continue into the merge conflict, <code>--force</code> is required.</p>
 
 
 </body>
