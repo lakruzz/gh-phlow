@@ -22,15 +22,17 @@ our %valid_commands = (
   issuebranch      => [1],
   web              => [1],
   mkalias          => [0],
-  workon           => [1]
+  workon           => [1],
+  sync             => [1]
 );
 
 GetOptions(
   (
     "issue=s"              => \$options{issue},
     "force"                => \$options{force},
+    "safe"                 => \$options{safe},
     "verbose!"             => \$options{verbose},
-		"help"                 => \$options{help},
+		"usage"                 => \$options{usage},
     "man"                  => sub { pod2usage(-exitval => 0, -verbose => 2) }	)
 ) || pod2usage(-exitval => 1, -verbose => 0);
 
@@ -82,17 +84,17 @@ Use the L<issue system|http://github.com/praqma/the-phlow/issues> in the repo
 =head1 SYNOPSIS
 
   git phlow <command> [options] [arguments]
-  git phlow --man|--help
+  git phlow --man|--usage
 
 All options can be shortend to their shortest unambigious form and you can use one or two dashes in front of options, as your temper prefers - we don't care.
 
-E.g. C<-h> can substitute C<--help>.
+E.g. C<-u> can substitute C<--usage>.
 
 =head1 OPTIONS
 
 The valid phlow commands are listed below.
 
-  phlow addremove [--help][--verbose]
+  phlow addremove [--usage][--verbose]
   phlow defaultbranch
 
 
@@ -179,7 +181,7 @@ Instead of the full length phlow command:
 
   git phlow workon 3
 
-It will not overwrite existing aliases with clashing names unless you applu C<--force>
+It will not overwrite existing aliases with clashing names unless you apply C<--force>
 
 =cut
 
@@ -208,12 +210,104 @@ It will not overwrite existing aliases with clashing names unless you applu C<--
   }
 }
 
+sub sync(){
+
+  my $local_branch = cmd(
+    command => "git rev-parse --symbolic-full-name --abbrev-ref HEAD",
+    verbose => $options{verbose} );
+  chomp($local_branch);
+
+  my $remote_branch =cmd(
+    command => 'git rev-parse --abbrev-ref --symbolic-full-name @{u}',
+    verbose => $options{verbose} );
+  chomp($remote_branch);
+
+  my $remote = cmd(
+    command => "git config branch.$local_branch.remote",
+    verbose => $options{verbose} );
+  chomp($remote);
+
+  my $status = cmd(
+   command => "git status --short --branch --porcelain",
+   verbose => $options{verbose} );
+
+   cmd(
+     command => "git fetch $remote",
+     verbose => $options{verbose} );
+
+  if ($status =~ /\[.*behind.*\]/){
+    print "Your branch is behind '$remote_branch'\n";
+    if ($status =~ /\[.*ahead.*\]/){
+      print "...and behold! you branch is also ahead of '$remote_branch'\n";
+      my $mergestatus_txt = cmd(
+        command => "git format-patch $remote_branch --stdout \| git apply --check",
+        verbose => $options{verbose},
+        die_on_err => 0,
+        merge_errout => 1);
+
+      my $conflict = ($mergestatus_txt =~ /.*patch failed.*/)? 1:0;
+
+      if ($conflict){
+        print "You have a merge conflict coming up:\n";
+        $mergestatus_txt =~ s/error:/  /g;
+        print grep /.*patch failed.*/, split /\n/, $mergestatus_txt;
+        print "\n";
+
+        if (not defined($options{force})){
+          print STDERR "Run again with '--force' if you're up for the rebase\n";
+          exit 1;
+        }
+      }else {
+        print "Luckily the merge is clean as a whistle...\n";
+      }
+      print cmd(
+        command => "git rebase --preserve-merges $remote_branch",
+        verboseq => $options{verbose},
+        die_on_err => 0 );
+    } else{
+        print "Fast-forwarding\n";
+        print &cmd (
+          command => "git merge --ff-only $remote_branch",
+          verbose => $options{verbose} );
+    }
+  } else{
+    print "Everything is up-to-date\n";
+  }
+};
+
 sub issuebranch($){
+
+=head2 issuebranch
+
+C<issuebranch issue>
+
+Takes an integer as argument and returns the branch name, that will be used for that isses, based on it's current title.
+
+=cut
   my $issue = shift;
   print issue_branch_name($issue)."\n";
 }
 
 sub workon ($){
+
+=head2 workon
+
+C<workon issue [--force]>
+
+Takes an integer as argument - refering to the issue numner on GitHub issues.
+
+It will create a working branch for that issue and check it out.
+
+If a reusable branch exist then it will rename it, check it out and synchronize it. Reusabel branches are any of the following
+
+  <issue_branch_name>
+  shared/<issue_branch_name>
+  delivered/<issue_branch_name>
+
+If more reusable brances exists, then C<--force> is required, for anything to happen. The branch to reuse is the first one found in the order listed above.
+
+=cut
+
   my $issue = shift;
   croak 'I want an integer!' unless ($issue =~ /^\d+$/);
   croak "There's only room for one argument" if defined(shift);
@@ -229,7 +323,7 @@ sub workon ($){
     die_on_err => 0,
     return_array => 1);
 
-  # Chomp and clean up output from the git command, transform to a map
+  # If there are any reusable branches we need to chomp and clean up output from the git command and turnit into a map
   if (@branches){
     my %branchmap;
     foreach my $existb (@branches){
@@ -238,35 +332,41 @@ sub workon ($){
       $branchmap{$existb} = '';
     }
 
-    # If there are more then one potentially reusable branch then '--force' is required to proceed
+    # If there are more then one potentially reusable branch then we need to correct or verify the assumption made above.
     if (scalar @branches >1 && not $options{force}){
       print "Hmm - seems like you have too many branches related to issue '$issue' hanging around:\n\n";
-
       foreach (sort keys %branchmap){
         print  "  $_\n";
       }
-
-      print "\nThere can be only one! Either clean up a little or run again with '--force'\n";
-
+      print "\nCome on Highlander! - There can be only one! Either clean up a little or run again with '--force'\n";
       exit 1;
     }
 
-    if (defined($branchmap{$branchname})){
-      print "Reusing branch '$branchname'\n";
-      exit 0;
-    }
+    my $reuse_branch = (defined($branchmap{$branchname}))?
+      $branchname :
+      (defined($branchmap{$shared_branchname}))?
+        $shared_branchname :
+        (defined($branchmap{$delivered_branchname}))?
+        $delivered_branchname :
+        undef;
 
-    if (defined($branchmap{$shared_branchname})){
-      print "Reusing branch '$shared_branchname'\n";
-      exit 0;
-    }
+    croak "What the F%&€K! I would expect to have pointed out a reusable branch at this point" unless defined($reuse_branch);
 
-    if (defined($branchmap{$delivered_branchname})){
-      print "Reusing branch '$delivered_branchname'\n";
-      exit 0;
-    }
+    unless ($branchname eq $reuse_branch){
+      print "Reusing branch '$reuse_branch'\n";
+      cmd (
+        command => "git branch -M $reuse_branch $branchname",
+        verbose => $options{verbose} );
+    };
 
-  } else{ # no branches ot reuse
+    cmd (
+      command => "git checkout $branchname",
+      verbose => $options{verbose} );
+
+    sync();
+
+  }
+  else { # no branches to reuse - let's create it
     cmd (
       command => "git fetch origin",
       verbose => $options{verbose} );
@@ -303,7 +403,7 @@ sub validate_context(){
 		print STDERR "$Phlowcommand is not a legal command\n";
 		pod2usage(-exitval => 1, -verbose => 1)
 	};
-  defined $options{help} && pod2usage(
+  defined $options{usage} && pod2usage(
    -verbose => 99,
    -exitval => 1,
    -sections => [ "COMMANDS/".$Phlowcommand ]
