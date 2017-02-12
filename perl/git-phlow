@@ -30,7 +30,6 @@ GetOptions(
   (
     "issue=s"              => \$options{issue},
     "force"                => \$options{force},
-    "safe"                 => \$options{safe},
     "verbose!"             => \$options{verbose},
 		"usage"                 => \$options{usage},
     "man"                  => sub { pod2usage(-exitval => 0, -verbose => 2) }	)
@@ -44,8 +43,6 @@ eval '&'.$Phlowcommand.'(@ARGV)';
 if ($@){
   warn $@;
 }
-
-
 
 exit(0);
 
@@ -94,37 +91,75 @@ E.g. C<-u> can substitute C<--usage>.
 
 The valid phlow commands are listed below.
 
-  phlow addremove [--usage][--verbose]
+  phlow addremove
   phlow defaultbranch
+  phlow issuebranch issue
+  phlow web [--issue number]
+  phlow mkalias [--force]
+  workon issue [--force]
+  sync [--force]
 
+The following switches are accepted by all commands:
+
+=over
+
+=item C<< B<--verbose> >>
+
+List's all commands that are passed on to the shell - quite noisy, but useful if you wann learn what's happening under the hood
+
+=item C<< B<--usage> >>
+
+Give detailed help to each individual command.
+
+=back
 
 =head1 DESCRIPTION
 
-The script is helping implementing the git gymnastics required bot as an end user and on the CI servers to support "the Phlow".
+The script is helping implementing the git gymnastics required both as an end user and on the CI servers to support "the Phlow".
 
 The most simple use of it is to clone the repo to your PC, and then link the perl folder to a directory that is in your C<$PATH> like this:
 
     git clone https://github.com/Praqma/the-phlow.git
     ln -s ./the-phlow/perl ~/opt/phlow
 
-and then add /Users/you/opt/phlow to your C<$PATH> in C<.zshrc> or C<.bashrc> or what ever you are using.
+and then add C</Users/you/opt/phlow> to your C<$PATH> in C<.zshrc> or C<.bashrc> or what ever you are using.
 
-Hereafter you will hvae access to all the phlow commands like this
+Hereafter you will have access to all the phlow commands like this
 
     git phlow addremove
-    git phlow work-on
+    git phlow workon
     ...
+
+You can even make the into 'native' git commands by running the commands
+
+    git phlow mkalias
+
+Then you will be able to execut the same commands as
+
+    git addremove
+    git workon
+    ...
+
 
 =head1 COMMANDS
 
 =cut
 
 sub web($) {
+
 =head2 web
 
-C<git phlow web [--issue number]>
+    git phlow web [--issue number]
 
-Opens your current context in a web browser. If you are on an issue branch, then it will take you directly to the corresponding issue on GitHub. Otherwise it will take you to the repo's web site.
+=over
+
+=item C<< B< --issue number> >>
+
+C<number> is an integer refering to a GitHub issue in the context of the current repository. The number can be omitted. It will default to the issue number of your current branch context.
+
+=back
+
+Opens your current context in a web browser. If you are on an issue branch, or your apply an issue number in the switch, it take you directly to the corresponding issue on GitHub. Otherwise it will take you to the repo's web site.
 
 =cut
   my $url = 'https://github.com/';
@@ -147,21 +182,27 @@ sub addremove(){
 
 =head2 addremove
 
-C<addremove> is implementing Mercurials command of the same name.
+    addremove
 
-It doesn't take any parametes. It simply synchronizes your current work tree
-with the index; It adds the files you have added or modified and removes the files that you may removed.
+Doesn't take any parametes.
+
+It's implementing Mercurials command of the same name. It simply synchronizes your current work tree with the index; It adds the files you have added or modified and removes the files that you may removed.
 
 =cut
-	cmd(command => "git add -A .", verbose => $options{verbose} )
-
+	cmd(
+   command => "git add -A .",
+   verbose => $options{verbose} );
 };
 
 sub defaultbranch(){
 
 =head2 defaultbranch
 
-C<defaultbranch> Returns the default branch. This is a setting on the GitHub repository.
+    defaultbranch
+
+Doesn't take any parametes.
+
+Returns the default branch. This is a setting on the GitHub repository.
 
 =cut
   print get_default_branch()."\n";
@@ -171,7 +212,15 @@ sub mkalias (){
 
 =head2 mkalias
 
-C<git phlow mkalias [--force]>
+    git phlow mkalias [--force]
+
+=over
+
+=item C<< B<--force> >>
+
+C<force> is required if an alias already exist with the same name, and the configuration to set is different to the one that there already is. In other words using C<mkalias>  I<without> force, is guaranteed to be non intrusive to your git config setup.
+
+=back
 
 Creates the aliases foreach phlow command. Which will enable you to use the flow commands as native git commands:
 
@@ -211,6 +260,28 @@ It will not overwrite existing aliases with clashing names unless you apply C<--
 }
 
 sub sync(){
+
+=head2 sync
+
+    git phlow sync [--force]
+
+=item C<< B<--force> >>
+
+C<force> is reqiured if the rebase is causing a merge conflict to managed manually. In other words using C<sync> I<without> force is guaranteed to either synchronize yor branch successfully - or do nothing.
+
+=back
+
+Sync operates in the context of the currently checked out branch.
+
+Sync will rebase against the branch your are tracking remotely, if's guranteed to be safe. If fast-forwards if it can, if a merge is needed, then it will dry-run it and see if can be done without merge conflicts.
+
+If a mege conflict is unavoidable you will be warned.
+
+If you run with C<--force> it will continue into the rebase, even if causes a conflict - and you will have to resolve it yourself.
+
+But in short - C<sync> is guarantted to be safe as long as you don't use the C<--force> switch.
+
+=cut
 
   my $local_branch = cmd(
     command => "git rev-parse --symbolic-full-name --abbrev-ref HEAD",
@@ -279,9 +350,18 @@ sub issuebranch($){
 
 =head2 issuebranch
 
-C<issuebranch issue>
+    issuebranch issue
 
-Takes an integer as argument and returns the branch name, that will be used for that isses, based on it's current title.
+=over
+
+=item C<< B<issue> >>
+
+Issue is refering to the issue number of an issue on GitHub, in the context of your current repository.
+
+=back
+
+
+Takes an integer as argument and returns the branch name, that will be used for that issue, based on it's current title.
 
 =cut
   my $issue = shift;
@@ -292,19 +372,42 @@ sub workon ($){
 
 =head2 workon
 
-C<workon issue [--force]>
+    workon issue [--force]
 
-Takes an integer as argument - refering to the issue numner on GitHub issues.
+=over
 
-It will create a working branch for that issue and check it out.
+=item C<< B<--force> >>
+
+Will force a rebase even if it leads to a merge conflict. It's teh same I<force> as describe in C<git phlow sync>.
+
+=back
+
+
+Takes an integer as argument - refering to the issue numner on GitHub issues. It will create a working branch for that issue and check it out.
 
 If a reusable branch exist then it will rename it, check it out and synchronize it. Reusabel branches are any of the following
 
-  <issue_branch_name>
-  shared/<issue_branch_name>
-  delivered/<issue_branch_name>
+=over
+
+=item
+
+C<< <issue_branch_name> >>
+
+=item
+
+C<< shared/<issue_branch_name> >>
+
+=item
+
+C<< delivered/<issue_branch_name> >>
+
+=back
 
 If more reusable brances exists, then C<--force> is required, for anything to happen. The branch to reuse is the first one found in the order listed above.
+
+C<workon> can be used to all swapping to and from ongoing work - even work that is shared (parked) or work that is already delivered and needs to be reobtrained.
+
+If a reusable branch is found, then it is synced with is't remote (see C<gitp hlow sync>). The synce is guaranteed to on be carreid out if it's free of merge conflicts. To continue into the merge conflict, C<--force> is required.
 
 =cut
 
@@ -374,26 +477,6 @@ If more reusable brances exists, then C<--force> is required, for anything to ha
       command => "git checkout -b $branchname origin/".get_default_branch(),
       verbose => $options{verbose})
   };
-
-
-
-
-  # BRANCHNAME=`git issue-branch $1`; \
-  # DELIVEREDBRANCHNAME=delivered/$BRANCHNAME; \
-  # if [[ `git branch --list $DELIVEREDBRANCHNAME` =~ $DELIVEREDBRANCHNAME ]]; \
-  # then \
-  #   git branch -m $DELIVEREDBRANCHNAME $BRANCHNAME; \
-  #   git checkout $BRANCHNAME; \
-  # else \
-  #   git checkout $BRANCHNAME   2> /dev/null; \
-  #   git fetch origin \
-  #   && git checkout -b $BRANCHNAME origin/`git default-branch`; \
-  # fi; \
-  # if [[ `git status` =~ "fast-forwarded" ]]; \
-  # then \
-  #   git pull; \
-  # fi; \
-  # git issue-wip $1; \
 }
 
 ######## Non exposed helper functions
@@ -501,8 +584,5 @@ sub get_default_branch(){
   my $json = JSON::PP->new->utf8->relaxed([1])->decode($raw_json);
   return $json->{default_branch};
 }
-
-
-
 
 __END__
