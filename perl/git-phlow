@@ -149,13 +149,17 @@ sub web($) {
 
 =head2 web
 
-    git phlow web [--issue number]
+    git phlow web [[--issue] number]
 
 =over
 
 =item C<< B< --issue number> >>
 
+=item C<< B< number> >>
+
 C<number> is an integer refering to a GitHub issue in the context of the current repository. The number can be omitted. It will default to the issue number of your current branch context.
+
+Hell, even the switch can be ommitted, so you can apply the number just as an argument.
 
 =back
 
@@ -166,13 +170,18 @@ Opens your current context in a web browser. If you are on an issue branch, or y
   my $hubname = hubname();
   if (defined($hubname)){
     $url =$url.$hubname;
+    my $issue;
     if($options{issue}){
-      croak 'I want an integer!' unless ($options{issue} =~ /^\d+$/);
-      $url = $url.'/issues/'.$options{issue};
+      $issue = $options{issue};
     } else{
-      my $issue = issue_no_from_branch();
-      print "DEBUG: \$issue: $issue\n";
-      defined($issue) && do {$url = $url.'/issues/'.$issue};
+      $issue = shift;
+      defined($issue) || do {
+        $issue = issue_no_from_branch();
+      }
+    }
+    if (defined($issue)){
+      croak 'I want an integer!' unless ($issue =~ /^\d+$/);
+      $url = $url.'/issues/'.$issue;
     }
   }
   `open $url`;
