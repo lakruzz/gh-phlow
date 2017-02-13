@@ -23,6 +23,7 @@ our %valid_commands = (
   web              => [1],
   mkalias          => [0],
   workon           => [1],
+  issue            => [1],
   sync             => [1]
 );
 
@@ -30,8 +31,9 @@ GetOptions(
   (
     "issue=s"              => \$options{issue},
     "force"                => \$options{force},
-    "verbose!"             => \$options{verbose},
-		"usage"                 => \$options{usage},
+    "wip!"                 => \$options{wip},
+    "verbose"              => \$options{verbose},
+		"usage"                => \$options{usage},
     "man"                  => sub { pod2usage(-exitval => 0, -verbose => 2) }	)
 ) || pod2usage(-exitval => 1, -verbose => 0);
 
@@ -488,6 +490,45 @@ If a reusable branch is found, then it is synced with is't remote (see C<gitp hl
       command => "git checkout -b $branchname origin/".get_default_branch(),
       verbose => $options{verbose})
   };
+}
+
+sub issue ($){
+
+=head2 issue
+
+Deals with GitHub issues.
+
+=cut
+
+  my $issue = shift;
+  croak 'I want an integer!' unless ($issue =~ /^\d+$/);
+  croak "There's only room for one argument" if defined(shift);
+  defined $options{wip} || pod2usage(
+   -verbose => 99,
+   -exitval => 1,
+   -sections => [ "COMMANDS/".$Phlowcommand ]);
+
+  my $done  = 0;
+  if(defined($options{wip}) && not $done){
+
+    if ($options{wip}){
+       cmd(
+        command => "ghi assign $issue",
+        verbose => $options{verbose} );
+      cmd(
+        command => "ghi label $issue 'Status - in progress'",
+        verbose => $options{verbose} );
+      print cmd(
+        command => "ghi open $issue",
+        verbose => $options{verbose} );
+    } else {
+      print cmd(
+        command => "ghi label $issue -d 'Status - in progress'",
+        verbose => $options{verbose},
+        die_on_err => 0 );
+    }
+    $done = 1;
+  }
 }
 
 ######## Non exposed helper functions
