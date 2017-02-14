@@ -31,8 +31,10 @@ GetOptions(
   (
     "issue=s"              => \$options{issue},
     "force"                => \$options{force},
+    "number"               => \$options{number},
     "wip!"                 => \$options{wip},
     "verbose"              => \$options{verbose},
+    "branch"               => \$options{branch},
 		"usage"                => \$options{usage},
     "man"                  => sub { pod2usage(-exitval => 0, -verbose => 2) }	)
 ) || pod2usage(-exitval => 1, -verbose => 0);
@@ -501,16 +503,18 @@ Deals with GitHub issues.
 =cut
 
   my $issue = shift;
-  croak 'I want an integer!' unless ($issue =~ /^\d+$/);
+  croak 'I want an integer!' unless ($issue =~ /^\d+$/ || defined($options{number}));
   croak "There's only room for one argument" if defined(shift);
-  defined $options{wip} || pod2usage(
-   -verbose => 99,
-   -exitval => 1,
-   -sections => [ "COMMANDS/".$Phlowcommand ]);
+  defined($options{wip}) ||
+  defined($options{number}) ||
+  defined($options{branch}) ||
+  pod2usage(
+    -verbose => 99,
+    -exitval => 1,
+    -sections => [ "COMMANDS/".$Phlowcommand ]);
 
   my $done  = 0;
   if(defined($options{wip}) && not $done){
-
     if ($options{wip}){
        cmd(
         command => "ghi assign $issue",
@@ -530,6 +534,17 @@ Deals with GitHub issues.
     }
     $done = 1;
   }
+
+  if(defined($options{number}) && not $done){
+    print issue_no_from_branch()."\n";
+    $done =1;
+  }
+
+  if (defined($options{branch})){
+    print issue_branch_name($issue)."\n";
+    $done = 1;
+  }
+
 }
 
 ######## Non exposed helper functions
@@ -628,7 +643,7 @@ sub issue_no_from_branch (){
   my $retval;
   my $branch = &cmd( command => "git symbolic-ref --short HEAD",
     verbose => $options{verbose});
-  if ( $branch =~ /^(\d+)/ || $branch =~ /^delivered\/(\d+)/){
+  if ( $branch =~ /^(\d+)/ || $branch =~ /^shared\/(\d+)/ || $branch =~ /^delivered\/(\d+)/){
     $retval = $1;
   };
   return $retval;
