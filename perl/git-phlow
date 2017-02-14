@@ -500,6 +500,31 @@ sub issue ($){
 
 Deals with GitHub issues.
 
+  phlow issue [--number]
+  phlow issue [--branch] number
+  phlow issue [--[no]wip] number
+
+=over
+
+=item C<< B<number> >>
+
+The issue number in reference
+
+=item C<< B<--number> >>
+
+Returns the issue number, derived from the current branch name
+
+=item C<< B<--branch> >>
+
+Returns the branch name based on the
+
+=item C<< B<--[no]wip> >>
+
+Marks or unmarks the issue as Work In Progress
+
+
+=back
+
 =cut
 
   my $issue = shift;
