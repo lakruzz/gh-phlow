@@ -300,20 +300,13 @@ But in short - C<sync> is guarantted to be safe as long as you don't use the C<-
 
 =cut
 
-  my $local_branch = cmd(
-    command => "git rev-parse --symbolic-full-name --abbrev-ref HEAD",
-    verbose => $options{verbose} );
-  chomp($local_branch);
 
   my $remote_branch =cmd(
     command => 'git rev-parse --abbrev-ref --symbolic-full-name @{u}',
     verbose => $options{verbose} );
   chomp($remote_branch);
 
-  my $remote = cmd(
-    command => "git config branch.$local_branch.remote",
-    verbose => $options{verbose} );
-  chomp($remote);
+  my $remote = remote();
 
   my $status = cmd(
    command => "git status --short --branch --porcelain",
@@ -513,11 +506,11 @@ sub deliver ($) {
 
   my $issue = issue_no_from_branch();
 
+  cmd(
+    command => "git phlow sync",
+    verbose => $options{verbose} );
+
   if(defined($options{local})){
-    print "local\n";
-    cmd(
-      command => "git phlow sync",
-      verbose => $options{verbose} );
 
     cmd(
       command => "git checkout ".get_default_branch(),
@@ -531,18 +524,26 @@ sub deliver ($) {
       command => "git merge $branch",
       verbose => $options{verbose} );
 
-    cmd(
-      command => "git branch -m $branch delivered/$branch",
-      verbose => $options{verbose} );
+  } else {
 
     cmd(
-      command => "git push",
+      command => "git push ".remote()." $branch:ready/$branch",
       verbose => $options{verbose} );
 
-    cmd(
-      command => "git issue --nowip ".$issue,
-      verbose => $options{verbose} );
   }
+
+  cmd(
+    command => "git branch -m $branch delivered/$branch",
+    verbose => $options{verbose} );
+
+  cmd(
+    command => "git push",
+    verbose => $options{verbose} );
+
+  cmd(
+    command => "git issue --nowip ".$issue,
+    verbose => $options{verbose} );
+
 }
 
 sub issue ($){
@@ -714,7 +715,7 @@ sub ghapi ($){
   return JSON::PP->new->utf8->relaxed([1])->decode($raw_json);
 };
 
-sub issue_no_from_branch (){
+sub remote_from_branch (){
   my $retval;
   my $branch = &cmd( command => "git symbolic-ref --short HEAD",
     verbose => $options{verbose});
@@ -723,6 +724,22 @@ sub issue_no_from_branch (){
   };
   return $retval;
 };
+
+sub local_branch(){
+  my $local_branch = &cmd(
+    command => "git rev-parse --symbolic-full-name --abbrev-ref HEAD",
+    verbose => $options{verbose} );
+  chomp($local_branch);
+  return $local_branch;
+}
+
+sub remote(){
+  my $remote = &cmd(
+    command => "git config branch.".local_branch().".remote",
+    verbose => $options{verbose} );
+  chomp($remote);
+  return $remote;
+}
 
 sub get_default_branch(){
   my $cmd = 'curl -s -u :'.gettoken()
