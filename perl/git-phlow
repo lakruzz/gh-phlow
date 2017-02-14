@@ -24,12 +24,14 @@ our %valid_commands = (
   mkalias          => [0],
   workon           => [1],
   issue            => [1],
-  sync             => [1]
+  sync             => [1],
+  deliver          => [1]
 );
 
 GetOptions(
   (
     "issue=s"              => \$options{issue},
+    "local"                => \$options{local},
     "force"                => \$options{force},
     "number"               => \$options{number},
     "wip!"                 => \$options{wip},
@@ -494,6 +496,53 @@ If a reusable branch is found, then it is synced with is't remote (see C<gitp hl
   };
 }
 
+sub deliver ($) {
+
+=head2 deliver
+
+=cut
+  my $branch = cmd(
+    command => "git symbolic-ref --short HEAD",
+    verbose => $options{verbose} );
+
+  if ($branch  =~ /^delivered/ || $branch == get_default_branch() ){
+    print "Come on! - You can't deliver this branch!\n";
+  }
+
+  my $issue = issue_no_from_branch();
+
+  if(defined($options{local})){
+    print "local\n";
+    cmd(
+      command => "git phlow sync",
+      verbose => $options{verbose} );
+
+    cmd(
+      command => "git checkout ".get_default_branch(),
+      verbose => $options{verbose} );
+
+    cmd(
+      command => "git phlow sync",
+      verbose => $options{verbose} );
+
+    cmd(
+      command => "git merge $branch",
+      verbose => $options{verbose} );
+
+    cmd(
+      command => "git branch -m $branch delivered/$branch",
+      verbose => $options{verbose} );
+
+    cmd(
+      command => "git push",
+      verbose => $options{verbose} );
+
+    cmd(
+      command => "git issue --nowip ".$issue,
+      verbose => $options{verbose} );
+  }
+}
+
 sub issue ($){
 
 =head2 issue
@@ -521,7 +570,6 @@ Returns the branch name based on the
 =item C<< B<--[no]wip> >>
 
 Marks or unmarks the issue as Work In Progress
-
 
 =back
 
