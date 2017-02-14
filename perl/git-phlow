@@ -518,9 +518,10 @@ Deals with GitHub issues.
       cmd(
         command => "ghi label $issue 'Status - in progress'",
         verbose => $options{verbose} );
-      print cmd(
+      cmd(
         command => "ghi open $issue",
-        verbose => $options{verbose} );
+        verbose => $options{verbose},
+        system  => 1 );
     } else {
       print cmd(
         command => "ghi label $issue -d 'Status - in progress'",
@@ -577,12 +578,18 @@ sub cmd ($) {
   my %opt = @_;
   croak "input parameter for key 'command' required" unless ( $opt{command} );
   defined( $opt{die_on_err} )   ||  do {$opt{die_on_err}   = 1};
+  defined( $opt{system} )       ||  do {$opt{system}       = 0};
 	defined( $opt{merge_errout} ) ||  do {$opt{merge_errout} = 1};
 	defined( $opt{verbose} )      ||  do {$opt{verbose}      = 0};
 	defined( $opt{return_array} ) ||  do {$opt{return_array} = 0};
   my $cmd = ($opt{merge_errout})? $opt{command} . ' 2>&1' : $opt{command};
 	$opt{verbose} && print $opt{command}."\n";
-  my @res = qx($cmd);
+  my @res;
+  if ($opt{system}){
+    system($cmd);
+  } else {
+    @res= qx($cmd);
+  };
   # Report errors unless we expect the call to generate non-zero exit value
   unless ( not $opt{die_on_err} ) {
     if ($?) {
