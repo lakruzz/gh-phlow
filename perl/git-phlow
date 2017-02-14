@@ -505,6 +505,8 @@ sub deliver ($) {
     command => "git symbolic-ref --short HEAD",
     verbose => $options{verbose} );
 
+  chomp($branch);
+
   if ($branch  =~ /^delivered/ || $branch == get_default_branch() ){
     print "Come on! - You can't deliver this branch!\n";
   }
