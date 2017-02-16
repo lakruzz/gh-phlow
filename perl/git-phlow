@@ -41,9 +41,10 @@ GetOptions(
     "man"                  => sub { pod2usage(-exitval => 0, -verbose => 2) }	)
 ) || pod2usage(-exitval => 1, -verbose => 0);
 
-our $Phlowcommand = shift;
+our $Phlowcommand;
+$Phlowcommand = shift;
 
-validate_context();
+&validate_context();
 
 eval '&'.$Phlowcommand.'(@ARGV)';
 if ($@){
