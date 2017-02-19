@@ -562,7 +562,7 @@ sub share($){
   my $move =  (defined($options{force}))? ' -M ' : '-m';
   cmd( command => "git branch $move $branch shared/$branch",
     verbose => $options{verbose} );
-  cmd( command => "git push ".remote().$force." shared/$branch --set-upstream shared/$branch",
+  cmd( command => "git push ".remote().$force." shared/$branch --set-upstream",
       verbose => $options{verbose} );
 }
 
