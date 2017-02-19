@@ -403,8 +403,7 @@ sub workon ($){
   my $delivered_branchname = 'delivered/'.$branchname;
 
   # Get a list of branches that can be reused
-  my @branches = cmd(
-    command => "git branch --list $branchname $shared_branchname $delivered_branchname",
+  my @branches = cmd( command => "git branch --list $branchname $shared_branchname $delivered_branchname",
     verbose => $options{verbose},
     die_on_err => 0,
     return_array => 1);
@@ -440,8 +439,7 @@ sub workon ($){
 
     unless ($branchname eq $reuse_branch){
       print "Reusing branch '$reuse_branch'\n";
-      cmd (
-        command => "git branch -M $reuse_branch $branchname",
+      cmd ( command => "git branch -M $reuse_branch $branchname",
         verbose => $options{verbose} );
     };
 
@@ -451,13 +449,17 @@ sub workon ($){
 
     sync();
 
+    if ($reuse_branch eq $shared_branchname){
+      cmd ( command => "git branch --set-upstream-to ".remote()."/".get_default_branch(),
+        verbose => $options{verbose})
+    }
+
+
   }
   else { # no branches to reuse - let's create it
-    cmd (
-      command => "git fetch origin",
+    cmd ( command => "git fetch origin",
       verbose => $options{verbose} );
-    cmd (
-      command => "git checkout -b $branchname origin/".get_default_branch(),
+    cmd ( command => "git checkout -b $branchname origin/".get_default_branch(),
       verbose => $options{verbose})
   };
 }
