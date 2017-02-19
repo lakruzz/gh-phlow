@@ -777,8 +777,12 @@ sub local_branch() {
   return $local_branch;
 }
 
+<<<<<<< Updated upstream
+sub remote() {
+=======
 sub remote(){
   my $retval;
+>>>>>>> Stashed changes
   my $remote = &cmd(
     command => "git config branch.".local_branch().".remote",
     verbose => $options{verbose} );
