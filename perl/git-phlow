@@ -575,7 +575,7 @@ The following commit messages will be generated
 
   if (defined($arg) && defined($options{force})){
     my $issue = issue_no_from_branch();
-    $message = "Close $issue ".$arg;
+    $message = "Close #$issue ".$arg;
   } else {
     my $branch = cmd (
       command => "git symbolic-ref --short HEAD",
