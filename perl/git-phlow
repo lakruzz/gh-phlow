@@ -17,15 +17,16 @@ our %options;
 
 # The white-listed phlow commands
 our %valid_commands = (
-  addremove        => [1],
   defaultbranch    => [1],
-  web              => [1],
+  addremove        => [1],
   mkalias          => [0],
+  deliver          => [1],
   wrapup           => [1],
   workon           => [1],
+  share            => [1],
   issue            => [1],
   sync             => [1],
-  deliver          => [1]
+  web              => [1]
 );
 
 GetOptions(
@@ -36,6 +37,7 @@ GetOptions(
     "number"               => \$options{number},
     "wip!"                 => \$options{wip},
     "verbose"              => \$options{verbose},
+    "mention=s"            => \$options{mention},
     "branch"               => \$options{branch},
 		"usage"                => \$options{usage},
     "man"                  => sub { pod2usage(-exitval => 0, -verbose => 2) }	)
@@ -153,8 +155,6 @@ Then you will be able to execut the same commands as
 
 =cut
 
-sub web($) {
-
 =head2 web
 
     git phlow web [[--issue] number]
@@ -174,6 +174,7 @@ Hell, even the switch can be ommitted, so you can apply the number just as an ar
 Opens your current context in a web browser. If you are on an issue branch, or your apply an issue number in the switch, it take you directly to the corresponding issue on GitHub. Otherwise it will take you to the repo's web site.
 
 =cut
+sub web($) {
   my $url = 'https://github.com/';
   my $hubname = hubname();
   if (defined($hubname)){
@@ -195,8 +196,6 @@ Opens your current context in a web browser. If you are on an issue branch, or y
   `open $url`;
 }
 
-sub addremove(){
-
 =head2 addremove
 
     git phlow addremove
@@ -206,12 +205,11 @@ Doesn't take any parametes.
 It's implementing Mercurials command of the same name. It simply synchronizes your current work tree with the index; It adds the files you have added or modified and removes the files that you may removed.
 
 =cut
+sub addremove(){
 	cmd(
    command => "git add -A .",
    verbose => $options{verbose} );
 };
-
-sub defaultbranch(){
 
 =head2 defaultbranch
 
@@ -222,10 +220,10 @@ Doesn't take any parametes.
 Returns the default branch. This is a setting on the GitHub repository.
 
 =cut
+sub defaultbranch(){
+
   print get_default_branch()."\n";
 }
-
-sub mkalias (){
 
 =head2 mkalias
 
@@ -250,7 +248,7 @@ Instead of the full length phlow command:
 It will not overwrite existing aliases with clashing names unless you apply C<--force>
 
 =cut
-
+sub mkalias (){
   foreach my $cmd (sort keys %valid_commands){
     my $alias = "phlow $cmd";
     if ($valid_commands{$cmd}[0]){
@@ -276,8 +274,6 @@ It will not overwrite existing aliases with clashing names unless you apply C<--
   }
 }
 
-sub sync(){
-
 =head2 sync
 
     git phlow sync [--force]
@@ -301,8 +297,7 @@ If you run with C<--force> it will continue into the rebase, even if causes a co
 But in short - C<sync> is guarantted to be safe as long as you don't use the C<--force> switch.
 
 =cut
-
-
+sub sync(){
   my $remote_branch =cmd(
     command => 'git rev-parse --abbrev-ref --symbolic-full-name @{u}',
     verbose => $options{verbose} );
@@ -358,8 +353,6 @@ But in short - C<sync> is guarantted to be safe as long as you don't use the C<-
   }
 };
 
-sub workon ($){
-
 =head2 workon
 
     workon issue [--force]
@@ -400,7 +393,7 @@ C<workon> can be used to all swapping to and from ongoing work - even work that 
 If a reusable branch is found, then it is synced with is't remote (see C<gitp hlow sync>). The synce is guaranteed to on be carreid out if it's free of merge conflicts. To continue into the merge conflict, C<--force> is required.
 
 =cut
-
+sub workon ($){
   my $issue = shift;
   croak 'I want an integer!' unless ($issue =~ /^\d+$/);
   croak "There's only room for one argument" if defined(shift);
@@ -469,13 +462,12 @@ If a reusable branch is found, then it is synced with is't remote (see C<gitp hl
   };
 }
 
-sub deliver ($) {
-
 =head2 deliver
 
 =cut
-  my $branch = cmd(
-    command => "git symbolic-ref --short HEAD",
+sub deliver ($) {
+
+  my $branch = cmd( command => "git symbolic-ref --short HEAD",
     verbose => $options{verbose} );
 
   chomp($branch);
@@ -486,47 +478,33 @@ sub deliver ($) {
 
   my $issue = issue_no_from_branch();
 
-  cmd(
-    command => "git phlow sync",
+  cmd( command => "git phlow sync",
     verbose => $options{verbose} );
 
   if(defined($options{local})){
-
-    cmd(
-      command => "git checkout ".get_default_branch(),
+    cmd( command => "git checkout ".get_default_branch(),
       verbose => $options{verbose} );
-
-    cmd(
-      command => "git phlow sync",
+    cmd( command => "git phlow sync",
       verbose => $options{verbose} );
-
-    cmd(
-      command => "git merge $branch",
+    cmd( command => "git merge $branch",
       verbose => $options{verbose} );
-
-    cmd(
-      command => "git push",
+    cmd( command => "git push",
       verbose => $options{verbose} );
 
   } else {
 
-    cmd(
-      command => "git push ".remote()." $branch:ready/$branch",
+    cmd( command => "git push ".remote()." $branch:ready/$branch",
       verbose => $options{verbose} );
 
   }
 
-  cmd(
-    command => "git branch -m $branch delivered/$branch",
+  cmd( command => "git branch -m $branch delivered/$branch",
     verbose => $options{verbose} );
 
-  cmd(
-    command => "git issue --nowip ".$issue,
+  cmd( command => "git issue --nowip ".$issue,
     verbose => $options{verbose} );
 
 }
-
-sub wrapup ($){
 
 =head2 wrapup
 
@@ -569,44 +547,24 @@ The following commit messages will be generated
   Close 52 Cool new feature
 
 =cut
+sub wrapup ($){
 
-  my $arg = shift;
-  my $message;
-
-  if (defined($arg) && defined($options{force})){
-    my $issue = issue_no_from_branch();
-    $message = "Close #$issue ".$arg;
-  } else {
-    my $branch = cmd (
-      command => "git symbolic-ref --short HEAD",
-      verbose => $options{vebose} );
-    chomp($branch);
-    $branch =~ s/-/ /g;
-    $message = "Close #".$branch;
-
-    if (defined($arg)){
-      $message = $message."\n\n".$arg;
-    }
-
-  }
-
-  cmd(
-   command => "git add -A .",
-   verbose => $options{verbose} );
-
-  cmd(
-    command => 'git commit -m "'.$message.'"',
-    verbose => $options{verbose} );
-
-  #   echo $MSG > ~/WRAPUP_EDITMSG; \
-  #   git addremove; \
-  #   git commit -F ~/WRAPUP_EDITMSG; \
-  #   rm ~/WRAPUP_EDITMSG; \
-  # }; f"
+  keyword_commit("close");
 
 }
 
-sub issue ($){
+sub share($){
+  my $branch = cmd( command => "git symbolic-ref --short HEAD",
+    verbose => $options{verbose} );
+  keyword_commit("share"),
+  chomp($branch);
+  my $force = (defined($options{force}))? ' --force ' : '';
+  my $move =  (defined($options{force}))? ' -M ' : '-m';
+  cmd( command => "git branch $move $branch shared/$branch",
+    verbose => $options{verbose} );
+  cmd( command => "git push ".remote().$force." shared/$branch --set-upstream shared/$branch",
+      verbose => $options{verbose} );
+}
 
 =head2 issue
 
@@ -637,6 +595,8 @@ Marks or unmarks the issue as Work In Progress
 =back
 
 =cut
+sub issue ($) {
+
 
   my $issue = shift;
   croak 'I want an integer!' unless ($issue =~ /^\d+$/ || defined($options{number}));
@@ -685,7 +645,7 @@ Marks or unmarks the issue as Work In Progress
 
 ######## Non exposed helper functions
 
-sub validate_context(){
+sub validate_context() {
 	unless (defined $valid_commands{$Phlowcommand}){
 		print STDERR "$Phlowcommand is not a legal command\n";
 		pod2usage(-exitval => 1, -verbose => 1)
@@ -699,8 +659,7 @@ sub validate_context(){
   $options{verbose} && print "Phlow $Phlowcommand\n";
 };
 
-
-sub hubname(){
+sub hubname() {
   my $remoteurl = cmd(
     command => 'git config --get remote.origin.url',
     verbose => $options{verbose} );
@@ -711,7 +670,7 @@ sub hubname(){
   return $hubname;
 }
 
-sub gettoken(){
+sub gettoken() {
   my $token = cmd(
     command => 'git config --global --get ghi.token',
     verbose => $options{verbose});
@@ -725,7 +684,7 @@ sub gettoken(){
   return $token;
 }
 
-sub cmd ($) {
+sub cmd($) {
   my %opt = @_;
   croak "input parameter for key 'command' required" unless ( $opt{command} );
   defined( $opt{die_on_err} )   ||  do {$opt{die_on_err}   = 1};
@@ -750,7 +709,7 @@ sub cmd ($) {
   return ( $opt{return_array} ) ? @res : join( '', @res );
 }
 
-sub issue_branch_name ($) {
+sub issue_branch_name($) {
   my $issue = shift;
   croak 'I want an integer!' unless ($issue =~ /^\d+$/);
   croak "There's only room for one argument" if defined(shift);
@@ -767,7 +726,7 @@ sub issue_branch_name ($) {
   return lc($branchname);
 };
 
-sub ghapi ($){
+sub ghapi($) {
   my %opt = @_;
   croak "'uri' is required" unless defined($opt{uri});
   my $cmd = 'curl -s -u :'.gettoken().' '.$opt{uri};
@@ -775,7 +734,7 @@ sub ghapi ($){
   return JSON::PP->new->utf8->relaxed([1])->decode($raw_json);
 };
 
-sub remote_from_branch (){
+sub remote_from_branch() {
   my $retval;
   my $branch = &cmd( command => "git symbolic-ref --short HEAD",
     verbose => $options{verbose});
@@ -785,7 +744,7 @@ sub remote_from_branch (){
   return $retval;
 };
 
-sub local_branch(){
+sub local_branch() {
   my $local_branch = &cmd(
     command => "git rev-parse --symbolic-full-name --abbrev-ref HEAD",
     verbose => $options{verbose} );
@@ -793,7 +752,7 @@ sub local_branch(){
   return $local_branch;
 }
 
-sub remote(){
+sub remote() {
   my $remote = &cmd(
     command => "git config branch.".local_branch().".remote",
     verbose => $options{verbose} );
@@ -801,7 +760,7 @@ sub remote(){
   return $remote;
 }
 
-sub issue_no_from_branch (){
+sub issue_no_from_branch() {
   my $retval;
   my $branch = &cmd( command => "git symbolic-ref --short HEAD",
     verbose => $options{verbose});
@@ -811,7 +770,7 @@ sub issue_no_from_branch (){
   return $retval;
 };
 
-sub get_default_branch(){
+sub get_default_branch() {
   my $cmd = 'curl -s -u :'.gettoken()
     .' https://api.github.com/repos/'.hubname();
   my $raw_json = &cmd(
@@ -819,6 +778,42 @@ sub get_default_branch(){
     verbose => $options{verbose});
   my $json = JSON::PP->new->utf8->relaxed([1])->decode($raw_json);
   return $json->{default_branch};
+}
+
+sub keyword_commit() {
+  my $keyword = shift;
+  croak "Expected 'close' or 'share'" unless (lc($keyword) =~ /close|share/);
+
+  $keyword = ucfirst(lc($keyword));
+
+  my $arg = shift @ARGV;
+  my $message;
+
+  if (defined($arg) && defined($options{force})){
+    my $issue = issue_no_from_branch();
+    $message = "$keyword #$issue ".$arg;
+  } else {
+    my $branch = &cmd (
+      command => "git symbolic-ref --short HEAD",
+      verbose => $options{vebose} );
+    chomp($branch);
+    $branch =~ s/-/ /g;
+    $message = "$keyword #".$branch;
+
+    if (defined($arg)){
+      $message = $message."\n\n".$arg;
+    }
+
+  }
+
+  &cmd(
+   command => "git add -A .",
+   verbose => $options{verbose} );
+
+  &cmd(
+    command => 'git commit -m "'.$message.'"',
+    verbose => $options{verbose} );
+
 }
 
 __END__
