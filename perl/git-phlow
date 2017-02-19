@@ -19,7 +19,6 @@ our %options;
 our %valid_commands = (
   addremove        => [1],
   defaultbranch    => [1],
-  issuebranch      => [1],
   web              => [1],
   mkalias          => [0],
   wrapup           => [1],
@@ -100,11 +99,13 @@ The valid phlow commands are listed below.
 
   phlow addremove
   phlow defaultbranch
-  phlow issuebranch issue
-  phlow web [--issue number]
+  phlow web [[--issue] number]
   phlow mkalias [--force]
-  workon issue [--force]
-  sync [--force]
+  phlow workon issue [--force]
+  phlow sync [--force]
+  phlow deliver [--local]
+  phlow wrapup [[--force] message]
+  phlow issue --branch  number | --[no]wip number | --number
 
 The following switches are accepted by all commands:
 
@@ -356,28 +357,6 @@ But in short - C<sync> is guarantted to be safe as long as you don't use the C<-
     print "Everything is up-to-date\n";
   }
 };
-
-sub issuebranch($){
-
-=head2 issuebranch
-
-    issuebranch issue
-
-=over
-
-=item C<< B<issue> >>
-
-Issue is refering to the issue number of an issue on GitHub, in the context of your current repository.
-
-=back
-
-
-Takes an integer as argument and returns the branch name, that will be used for that issue, based on it's current title.
-
-=cut
-  my $issue = shift;
-  print issue_branch_name($issue)."\n";
-}
 
 sub workon ($){
 
@@ -649,7 +628,7 @@ Returns the issue number, derived from the current branch name
 
 =item C<< B<--branch> >>
 
-Returns the branch name based on the
+Returns the branch name based on the issue
 
 =item C<< B<--[no]wip> >>
 
