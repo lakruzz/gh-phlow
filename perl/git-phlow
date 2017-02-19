@@ -400,31 +400,50 @@ sub workon ($){
 
   my $branchname = issue_branch_name( $issue);
   my $shared_branchname = 'shared/'.$branchname;
+  my $remote_shared_branchname = remote().'/shared/'.$branchname;
   my $delivered_branchname = 'delivered/'.$branchname;
 
   # Get a list of branches that can be reused
-  my @branches = cmd( command => "git branch --list $branchname $shared_branchname $delivered_branchname",
+  my @branches = cmd( command => "git branch --list -a $branchname $shared_branchname $delivered_branchname $remote_shared_branchname",
     verbose => $options{verbose},
     die_on_err => 0,
     return_array => 1);
 
-  # If there are any reusable branches we need to chomp and clean up output from the git command and turnit into a map
+  # If there are any reusable branches we need to chomp and clean up output from the git command and turn it into a map
   if (@branches){
     my %branchmap;
     foreach my $existb (@branches){
       $existb =~ s/^\**\s*//;
+      $existb =~ s/^remotes\///;
       chomp($existb);
       $branchmap{$existb} = '';
     }
 
+    # If both local and remote shared branchname is represented - disregard the remote - we'll use the local one
+    if(defined($branchmap{$remote_shared_branchname})
+      && defined($branchmap{$shared_branchname})){
+      delete $branchmap{$remote_shared_branchname} ;
+    }
+
     # If there are more then one potentially reusable branch then we need to correct or verify the assumption made above.
-    if (scalar @branches >1 && not $options{force}){
+    if (scalar keys %branchmap >1 && not $options{force}){
       print "Hmm - seems like you have too many branches related to issue '$issue' hanging around:\n\n";
       foreach (sort keys %branchmap){
         print  "  $_\n";
       }
       print "\nCome on Highlander! - There can be only one! Either clean up a little or run again with '--force'\n";
       exit 1;
+    }
+
+    if(defined($branchmap{$remote_shared_branchname})
+      && not defined($branchmap{$shared_branchname})
+      && not defined($branchmap{$delivered_branchname})
+      && not defined($branchmap{$branchname})){
+      print "Found $remote_shared_branchname - mapping it to local $shared_branchname\n";
+      cmd ( command => "git branch $shared_branchname ".remote()."/$shared_branchname",
+        verbose => $options{verbose});
+      delete $branchmap{$remote_shared_branchname};
+      $branchmap{$shared_branchname} = '';
     }
 
     my $reuse_branch = (defined($branchmap{$branchname}))?
@@ -566,6 +585,8 @@ sub share($){
     verbose => $options{verbose} );
   cmd( command => "git push ".remote().$force." shared/$branch --set-upstream",
       verbose => $options{verbose} );
+  cmd( command => "git checkout ".get_default_branch(),
+    verbose => $options{verbose});
 }
 
 =head2 issue
@@ -814,7 +835,8 @@ sub keyword_commit() {
 
   &cmd(
     command => 'git commit -m "'.$message.'"',
-    verbose => $options{verbose} );
+    verbose => $options{verbose},
+    die_on_err => 0 );
 
 }
 
