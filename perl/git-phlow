@@ -22,6 +22,7 @@ our %valid_commands = (
   issuebranch      => [1],
   web              => [1],
   mkalias          => [0],
+  wrapup           => [1],
   workon           => [1],
   issue            => [1],
   sync             => [1],
@@ -197,7 +198,7 @@ sub addremove(){
 
 =head2 addremove
 
-    addremove
+    git phlow addremove
 
 Doesn't take any parametes.
 
@@ -543,6 +544,86 @@ sub deliver ($) {
   cmd(
     command => "git issue --nowip ".$issue,
     verbose => $options{verbose} );
+
+}
+
+sub wrapup ($){
+
+=head2 wrapup
+
+   git phlow wrapup [[--force] message]]
+
+=over
+
+=item C<< B<--force> >>
+
+When force is used on the message, the message will replace, the otherwice automatically generated commit message.
+
+=item C<< B<message> >>
+
+The message will be ammended the automatically generated commit message, except when `--force` is used, then it will replace it.
+
+=back
+
+Performs an `addremove` (`git add -A .) and commits, using a commit message that includes the keyword `close #<issue>` where issue is in reference to the currently checked out branch.
+
+B<Examples>
+
+On a branch named `52-implement-wrapup`
+
+The following commit messages will be generated
+
+=over
+
+=item C<git phlow wrapup>
+
+  Close #52 implement wrapup
+
+=item C<git phlow wrapup "Cool new feature">
+
+  Close #52 implement wrapup
+
+  Cool new feature
+
+=item C<git phlow wrapup --force "Cool new feature">
+
+  Close 52 Cool new feature
+
+=cut
+
+  my $arg = shift;
+  my $message;
+
+  if (defined($arg) && defined($options{force})){
+    my $issue = issue_no_from_branch();
+    $message = "Close $issue ".$arg;
+  } else {
+    my $branch = cmd (
+      command => "git symbolic-ref --short HEAD",
+      verbose => $options{vebose} );
+    chomp($branch);
+    $branch =~ s/-/ /g;
+    $message = "Close #".$branch;
+
+    if (defined($arg)){
+      $message = $message."\n\n".$arg;
+    }
+
+  }
+
+  cmd(
+   command => "git add -A .",
+   verbose => $options{verbose} );
+
+  cmd(
+    command => 'git commit -m "'.$message.'"',
+    verbose => $options{verbose} );
+
+  #   echo $MSG > ~/WRAPUP_EDITMSG; \
+  #   git addremove; \
+  #   git commit -F ~/WRAPUP_EDITMSG; \
+  #   rm ~/WRAPUP_EDITMSG; \
+  # }; f"
 
 }
 
