@@ -585,8 +585,10 @@ sub share($){
     verbose => $options{verbose} );
   cmd( command => "git push ".remote().$force." shared/$branch --set-upstream",
       verbose => $options{verbose} );
+  print "Renamed and pushed shared/$branch\n";
   cmd( command => "git checkout ".get_default_branch(),
     verbose => $options{verbose});
+
 }
 
 =head2 issue
