@@ -781,9 +781,10 @@ sub remote(){
   my $retval;
   my $remote = &cmd(
     command => "git config branch.".local_branch().".remote",
-    verbose => $options{verbose} );
+    verbose => $options{verbose},
+    die_on_err => 0 );
   chomp($remote);
-  $retval = ($remote ne '')? $remote : 'origin';
+  $retval = (@?)? 'origin' : $remote;
   return $retval;
 }
 
