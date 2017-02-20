@@ -513,7 +513,9 @@ sub deliver ($) {
 
   my $issue = issue_no_from_branch();
 
-  cmd( command => "git phlow sync",
+  my $force = (defined($options{force}))? ' --force ' : '';
+
+  cmd( command => "git phlow sync $force",
     verbose => $options{verbose} );
 
   if(defined($options{local})){
@@ -546,6 +548,13 @@ sub deliver ($) {
   cmd( command => "git push ".remote(). " :shared/$branch",
     verbose => $options{verbose},
     die_on_err => 0);
+
+  fetch( purge => 1,
+    prune => 1,
+    die_on_err => 0,
+    remote => 0,
+    local => 1,
+    prefix => ['shared', 'delivered'] );
 
 }
 
@@ -750,7 +759,7 @@ sub cmd($) {
   # Report errors unless we expect the call to generate non-zero exit value
   unless ( not $opt{die_on_err} ) {
     if ($?) {
-      croak "Execution of [$cmd] returned a non-zero value (".( ($?) / 256).")";
+      croak "Execution of [$cmd] returned a non-zero value (".( ($?) / 256).")\n";
     }
   };
   return ( $opt{return_array} ) ? @res : join( '', @res );
@@ -764,7 +773,7 @@ sub issue_branch_name($) {
   my $json = ghapi( uri => $api);
   my $branchname = $json->{title};
   if (defined $branchname){
-    $branchname =~ s/[\!\.\"\£\$€\%\&\?\*\@\:\;\\\/\[\]\,\:\'\+]//g;
+    $branchname =~ s/[\!\.\"\£\$\€\%\&\?\*\@\:\;\\\/\[\]\,\:\'\+\(\)]//g;
     $branchname = "$issue-".$branchname;
     $branchname =~ s/[ _]/-/g;
     while ($branchname =~ s/--/-/g){};
