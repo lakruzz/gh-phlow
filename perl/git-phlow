@@ -539,6 +539,14 @@ sub deliver ($) {
   cmd( command => "git issue --nowip ".$issue,
     verbose => $options{verbose} );
 
+  cmd( command => "git push ".remote(). " :$branch",
+    verbose => $options{verbose},
+    die_on_err => 0);
+
+  cmd( command => "git push ".remote(). " :shared/$branch",
+    verbose => $options{verbose},
+    die_on_err => 0);
+
 }
 
 =head2 wrapup
@@ -969,12 +977,29 @@ sub keyword_commit() {
 
  &cmd(
   command => "git add -A .",
-  verbose => $options{verbose} );
+  verbose => $options{verbose},
+  die_on_err => 0 );
 
- &cmd(
-   command => 'git commit -m "'.$message.'"',
-   verbose => $options{verbose} );
+  if(is_dirty()){
+    &cmd(
+      command => 'git commit -m "'.$message.'"',
+      verbose => $options{verbose} );
+  } else{
+    if (defined($arg) || $keyword eq 'Close'){
+      &cmd(
+        command => 'git commit --amend -m "'.$message.'"',
+        verbose => $options{verbose} );
+    }
+  }
 
+}
+
+sub is_dirty(){
+  my $dirty = &cmd( command => 'git status --porcelain',
+    verbose => $options{verbose},
+    die_on_err => 0);
+  chomp($dirty);
+  return ($dirty ne '')? 1 : 0;
 }
 
 __END__
