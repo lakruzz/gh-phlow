@@ -848,4 +848,40 @@ sub get_default_branch() {
 
 }
 
+sub keyword_commit() {
+ my $keyword = shift;
+ croak "Expected 'close' or 'share'" unless (lc($keyword) =~ /close|share/);
+
+ $keyword = ucfirst(lc($keyword));
+
+ my $arg = shift @ARGV;
+ my $message;
+
+ if (defined($arg) && defined($options{force})){
+   my $issue = issue_no_from_branch();
+   $message = "$keyword #$issue ".$arg;
+ } else {
+   my $branch = &cmd (
+     command => "git symbolic-ref --short HEAD",
+     verbose => $options{vebose} );
+   chomp($branch);
+   $branch =~ s/-/ /g;
+   $message = "$keyword #".$branch;
+
+   if (defined($arg)){
+     $message = $message."\n\n".$arg;
+   }
+
+ }
+
+ &cmd(
+  command => "git add -A .",
+  verbose => $options{verbose} );
+
+ &cmd(
+   command => 'git commit -m "'.$message.'"',
+   verbose => $options{verbose} );
+
+}
+
 __END__
