@@ -476,9 +476,9 @@ sub workon ($){
 
   }
   else { # no branches to reuse - let's create it
-    cmd ( command => "git fetch origin",
+    cmd ( command => "git fetch ".remote() ,
       verbose => $options{verbose} );
-    cmd ( command => "git checkout -b $branchname origin/".get_default_branch(),
+    cmd ( command => "git checkout -b $branchname ".remote().'/'.get_default_branch(),
       verbose => $options{verbose})
   };
 }
@@ -686,7 +686,7 @@ sub validate_context() {
 
 sub hubname() {
   my $remoteurl = cmd(
-    command => 'git config --get remote.origin.url',
+    command => 'git config --get remote.'.remote().'.url',
     verbose => $options{verbose} );
   my ($srv, $hubname) = split /:/, $remoteurl;
   $hubname =~ s@//github.com/@@g;
@@ -783,9 +783,14 @@ sub remote(){
     command => "git config branch.".local_branch().".remote",
     verbose => $options{verbose},
     die_on_err => 0 );
+  if (@?){
+    &cmd(
+      command => "git config branch.".get_default_branch().".remote",
+      verbose => $options{verbose},
+      die_on_err => 0 );
+  }
   chomp($remote);
-  $retval = (@?)? 'origin' : $remote;
-  return $retval;
+  return $remote;
 }
 
 sub issue_no_from_branch() {
@@ -806,9 +811,7 @@ sub get_default_branch() {
     verbose => $options{verbose});
   my $json = JSON::PP->new->utf8->relaxed([1])->decode($raw_json);
   return $json->{default_branch};
-}
 
-sub keyword_commit() {
   my $keyword = shift;
   croak "Expected 'close' or 'share'" unless (lc($keyword) =~ /close|share/);
 
