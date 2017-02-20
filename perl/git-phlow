@@ -24,6 +24,7 @@ our %valid_commands = (
   wrapup           => [1],
   workon           => [1],
   share            => [1],
+  purge            => [1],
   issue            => [1],
   sync             => [1],
   web              => [1]
@@ -36,8 +37,9 @@ GetOptions(
     "force"                => \$options{force},
     "number"               => \$options{number},
     "wip!"                 => \$options{wip},
+    "dry"                  => \$options{dry},
     "verbose"              => \$options{verbose},
-    "mention=s"            => \$options{mention},
+    "remote"               => \$options{remote},
     "branch"               => \$options{branch},
 		"usage"                => \$options{usage},
     "man"                  => sub { pod2usage(-exitval => 0, -verbose => 2) }	)
@@ -302,16 +304,12 @@ sub sync(){
     command => 'git rev-parse --abbrev-ref --symbolic-full-name @{u}',
     verbose => $options{verbose} );
   chomp($remote_branch);
-
   my $remote = remote();
-
   my $status = cmd(
    command => "git status --short --branch --porcelain",
    verbose => $options{verbose} );
 
-   cmd(
-     command => "git fetch $remote",
-     verbose => $options{verbose} );
+  fetch();
 
   if ($status =~ /\[.*behind.*\]/){
     print "Your branch is behind '$remote_branch'\n";
@@ -352,6 +350,21 @@ sub sync(){
     print "Everything is up-to-date\n";
   }
 };
+
+=head2 purge
+
+=cut
+
+sub purge(){
+  fetch( purge => 1,
+    prune => 1,
+    die_on_err => 0,
+    remote => defined($options{remote}),
+    local => defined($options{local}),
+    prefix => ['shared', 'delivered', remote().'/ready'],
+    dry => defined($options{dry})
+    );
+}
 
 =head2 workon
 
@@ -397,6 +410,8 @@ sub workon ($){
   my $issue = shift;
   croak 'I want an integer!' unless ($issue =~ /^\d+$/);
   croak "There's only room for one argument" if defined(shift);
+
+  fetch();
 
   my $branchname = issue_branch_name( $issue);
   my $shared_branchname = 'shared/'.$branchname;
@@ -476,8 +491,7 @@ sub workon ($){
 
   }
   else { # no branches to reuse - let's create it
-    cmd ( command => "git fetch ".remote() ,
-      verbose => $options{verbose} );
+    fetch();
     cmd ( command => "git checkout -b $branchname ".remote().'/'.get_default_branch(),
       verbose => $options{verbose})
   };
@@ -791,6 +805,85 @@ sub remote(){
   }
   chomp($remote);
   return $remote;
+}
+
+
+sub fetch ($){
+  my %opt = @_;
+  defined( $opt{die_on_err} )   ||  do {$opt{die_on_err}   = 1};
+  defined( $opt{purge} )        ||  do {$opt{purge}        = 0};
+  defined( $opt{prune} )        ||  do {$opt{prune}        = 1};
+  defined( $opt{local} )        ||  do {$opt{local}        = 0};
+  defined( $opt{remote} )       ||  do {$opt{remote}       = 0};
+  defined( $opt{prefix} )       ||  do {$opt{prefix}       = ['delivered'] };
+  defined( $opt{dry} )       ||  do {$opt{dry}       = 0 };
+
+
+  my $remote = remote();
+  my $prune = ($opt{prune})? ' --prune ' : '';
+  &cmd( command => "git fetch $remote $prune",
+    verbose => $options{verbose},
+    die_on_err => $opt{die_on_err} );
+
+  if($opt{purge}){
+    my $integration_branch = "$remote/".get_default_branch();
+    my %branchmap;
+
+    if($opt{local}){
+      my @branches = &cmd( command => "git branch --merged $integration_branch",
+        verbose => $options{verbose},
+        die_on_err => 0,
+        return_array => 1);
+
+      foreach my $b (@branches){
+        $b =~ s/^\s*//;
+        chomp($b);
+        foreach my $prefix (@{$opt{prefix}}){
+          if($b =~ /^$prefix/){
+            $branchmap{$b} = "git branch -d $b";
+          };
+        }
+      }
+    }
+
+
+    if ($opt{remote}){
+      my @remote_branches = &cmd( command => "git branch -r --merged $integration_branch",
+        verbose => $options{verbose},
+        die_on_err => 0,
+        return_array => 1);
+
+      foreach my $b (@remote_branches){
+        $b =~ s/^\s*//;
+        chomp($b);
+        foreach my $prefix (@{$opt{prefix}}){
+          if($b =~ /^$prefix/){
+            $b =~ s/^$remote\///;
+            $branchmap{$b} = "git push $remote :$b";
+          };
+        }
+      }
+    }
+
+    foreach (sort keys %branchmap){
+      my $cmd = "$branchmap{$_}";
+      if ($opt{dry}){
+        print $cmd."\n";
+      } else {
+        print &cmd( command => $cmd,
+          verbose => $options{verbose},
+          die_on_err => 0);
+      }
+    }
+  }
+
+
+
+
+
+
+
+
 }
 
 sub issue_no_from_branch() {
