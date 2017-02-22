@@ -22,6 +22,7 @@ our %valid_commands = (
   mkalias          => [0],
   deliver          => [1],
   wrapup           => [1],
+  nextup           => [1],
   workon           => [1],
   share            => [1],
   purge            => [1],
@@ -41,6 +42,8 @@ GetOptions(
     "verbose"              => \$options{verbose},
     "remote"               => \$options{remote},
     "branch"               => \$options{branch},
+    "list"                 => \$options{list},
+    "prefix=s"             => \$options{prefix},
 		"usage"                => \$options{usage},
     "man"                  => sub { pod2usage(-exitval => 0, -verbose => 2) }	)
 ) || pod2usage(-exitval => 1, -verbose => 0);
@@ -507,8 +510,8 @@ sub deliver ($) {
 
   chomp($branch);
 
-  if ($branch  =~ /^delivered/ || $branch == get_default_branch() ){
-    print "Come on! - You can't deliver this branch!\n";
+  if ($branch  =~ /^delivered/ || $branch eq get_default_branch() ){
+    croak "Come on! - You can't deliver this branch! ($branch)\n";
   }
 
   my $issue = issue_no_from_branch();
@@ -602,6 +605,16 @@ The following commit messages will be generated
 sub wrapup ($){
 
   keyword_commit("close");
+
+}
+
+sub nextup ($){
+
+  croak unless defined($options{prefix});
+  print get_nextup( prefix => $options{prefix},
+    localname => 1,
+    list => $options{list});
+  print "\n";
 
 }
 
@@ -1009,6 +1022,50 @@ sub is_dirty(){
     die_on_err => 0);
   chomp($dirty);
   return ($dirty ne '')? 1 : 0;
+}
+
+sub get_nextup($){
+  my %opt = @_;
+  croak unless defined($opt{prefix});
+  defined( $opt{list} )   ||  do {$opt{list}   = 0};
+  defined( $opt{localname} )   ||  do {$opt{localname}   = 0};
+
+  &fetch();
+
+  my $prefix = $opt{prefix};
+  my %branchmap;
+  my $remote = remote();
+  my $integration_branch = $remote.'/'.get_default_branch();
+  my @branches = &cmd( command => "git branch -a --no-merged $integration_branch",
+    verbose => $options{verbose},
+    die_on_err => 0,
+    return_array => 1);
+
+  foreach my $b (@branches){
+    $b =~ s/^\**\s*//;
+    $b =~ s/^remotes\///;
+    chomp($b);
+    if($b =~ /^$prefix/){
+      my $t = &cmd( command => "git show -s --format=%ct $b",
+      verbose => $options{verbose});
+      chomp($t);
+      if($opt{localname}){
+        $b =~ s/^$remote\///;
+      }
+      $branchmap{$t} = $b;
+    }
+  }
+
+  if ($opt{list}){
+    foreach (sort keys %branchmap){
+      print $branchmap{$_}."\n";
+    }
+  } else{
+    if(@branches){
+      my @sorted = sort keys %branchmap;
+      return $branchmap{$sorted[0]}
+    }
+  }
 }
 
 __END__
