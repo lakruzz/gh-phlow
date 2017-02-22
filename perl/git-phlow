@@ -829,7 +829,7 @@ sub fetch ($){
   my %opt = @_;
   defined( $opt{die_on_err} )   ||  do {$opt{die_on_err}   = 1};
   defined( $opt{purge} )        ||  do {$opt{purge}        = 0};
-  defined( $opt{prune} )        ||  do {$opt{prune}        = 1};
+  defined( $opt{prune} )        ||  do {$opt{prune}        = 0};
   defined( $opt{local} )        ||  do {$opt{local}        = 0};
   defined( $opt{remote} )       ||  do {$opt{remote}       = 0};
   defined( $opt{prefix} )       ||  do {$opt{prefix}       = ['delivered'] };
