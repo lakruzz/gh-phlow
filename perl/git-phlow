@@ -818,21 +818,14 @@ sub local_branch() {
     command => "git rev-parse --symbolic-full-name --abbrev-ref HEAD",
     verbose => $options{verbose} );
   chomp($local_branch);
-  return $local_branch;
+  return ($local_branch ne 'HEAD')? $local_branch : '' ;
 }
 
 sub remote(){
-  my $retval;
   my $remote = &cmd(
-    command => "git config branch.".local_branch().".remote",
+    command => "git remote",
     verbose => $options{verbose},
-    die_on_err => 0 );
-  if (@?){
-    &cmd(
-      command => "git config branch.".get_default_branch().".remote",
-      verbose => $options{verbose},
-      die_on_err => 0 );
-  }
+    die_on_err => 1 );
   chomp($remote);
   return $remote;
 }
@@ -934,41 +927,6 @@ sub get_default_branch() {
     verbose => $options{verbose});
   my $json = JSON::PP->new->utf8->relaxed([1])->decode($raw_json);
   return $json->{default_branch};
-
-  my $keyword = shift;
-  croak "Expected 'close' or 'share'" unless (lc($keyword) =~ /close|share/);
-
-  $keyword = ucfirst(lc($keyword));
-
-  my $arg = shift @ARGV;
-  my $message;
-
-  if (defined($arg) && defined($options{force})){
-    my $issue = issue_no_from_branch();
-    $message = "$keyword #$issue ".$arg;
-  } else {
-    my $branch = &cmd (
-      command => "git symbolic-ref --short HEAD",
-      verbose => $options{vebose} );
-    chomp($branch);
-    $branch =~ s/-/ /g;
-    $message = "$keyword #".$branch;
-
-    if (defined($arg)){
-      $message = $message."\n\n".$arg;
-    }
-
-  }
-
-  &cmd(
-   command => "git add -A .",
-   verbose => $options{verbose} );
-
-  &cmd(
-    command => 'git commit -m "'.$message.'"',
-    verbose => $options{verbose},
-    die_on_err => 0 );
-
 }
 
 sub keyword_commit() {
