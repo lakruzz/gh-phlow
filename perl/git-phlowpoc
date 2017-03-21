@@ -540,8 +540,11 @@ sub deliver ($) {
   cmd( command => "git branch -m $branch delivered/$branch",
     verbose => $options{verbose} );
 
-  cmd( command => "git issue --nowip ".$issue,
-    verbose => $options{verbose} );
+
+  cmd(
+      command => "ghi label $issue -d 'Status - in progress'",
+      verbose => $options{verbose},
+      die_on_err => 0 );
 
   cmd( command => "git push ".remote(). " :$branch",
     verbose => $options{verbose},
