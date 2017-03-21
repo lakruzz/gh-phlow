@@ -518,8 +518,7 @@ sub deliver ($) {
 
   my $force = (defined($options{force}))? ' --force ' : '';
 
-  cmd( command => "git phlow sync $force",
-    verbose => $options{verbose} );
+  sync();
 
   if(defined($options{local})){
     cmd( command => "git checkout ".get_default_branch(),
