@@ -523,8 +523,7 @@ sub deliver ($) {
   if(defined($options{local})){
     cmd( command => "git checkout ".get_default_branch(),
       verbose => $options{verbose} );
-    cmd( command => "git phlow sync",
-      verbose => $options{verbose} );
+    sync();
     cmd( command => "git merge $branch",
       verbose => $options{verbose} );
     cmd( command => "git push",
