@@ -1,10 +1,16 @@
 #! /bin/bash
 
 usage="
-  Usage:  mk-phlow-defaults [--help] [--clean]
+  Usage:  mk-phlow-defaults [--help]
+
+  The script creates the labels used to control the phlow
+  in GitHub issues using ZenHub Board.
+
+  For more details see: https://www.prolike.io/stories/zenhub/
 
   "
 constraints="
+   Constraints:
    This script uses the GitHub Issues command line interface 'ghi'
    Install details at https://github.com/stephencelis/ghi
 "
