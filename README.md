@@ -1,40 +1,66 @@
----
-maintainer: lakruzz
----
+# The Phlow
 
-# Welcome to the Phlow
+## - A pragmatic automated workflow using GitHub and GitHub issues
 
-__Pronunciation: /floʊ/  ...as in *"flow"*__
 
-This repository contains some of the building blocks used to setup the phlow.
+### Abstract
 
-* The git aliases
-* The GitHub issue labels
-* Ghi (a CLI that supports GitHub Issues)
+`Phlow
+__Pronunciation: /floʊ/  ...exactly as in *"flow"*__
 
-But if you want to know more background have a look at the Stories:
+There are many recommended work processes out there, that are specifically designed to be git centric. _Git flows_ — So one could ask: _"why do we need another?"_. Well the justification for this particular one is that _"It's elegant and simple"_.
 
-- [A Praqmatic following](http://www.praqma.com/stories/a-pragmatic-workflow/)
-- [Milestones and Office hours](http://www.praqma.com/stories/milestones-and-officehours/)
-- [An Automated Git branching strategy](http://www.josra.org/blog/An-automated-git-branching-strategy.html)
-- [Pretested Integation Plugin](http://www.josra.org/blog/Pretested+integration+plugin.html) (for Jenkins)
+As opposed to most flows which are _pull request centric_ — that is; all changes to repository happens in context of pull requests and peer-reviews. This one is instead _issue centric_.  We still get a place where we can discuss and collaborate around - well; issues. But we don't get the tedious stop-go process that pull requests enforces.
 
-The phlow itself is simple to use. It's uses some simple conventions and are only structures around labels and optionally a Kanban board on top from [waffle.io](https://waffle.io).
+Where _pull request centric flows_ are control flows – this one is about _collaboration_.
 
-## The GitHub Issue CLI - ghi
-The aliases we're using utilizes the [ghi](https://github.com/stephencelis/ghi) CLI interface - so please make sure you have that installed.
+### A git extension
+This flow is delivered to you as a _git extension_ when you install it you have simply extended your local git with five new commands:
 
-We've added a script [phlow-labels](https://github.com/Praqma/the-phlow/blob/master/phlow-labels) you can use for the purpose.
+```shell
+git workon <issue number>
+git wrapup
+git deliver
+git share
+git sync <issue number>
+```
 
-## Roadmap
+That's it - and it's all you need.
 
-We're using this phlow heavily internally in Praqma, and we're improving it constantly. The idea is that we will develop this as a git extension, rather than a pile of aliases, and we will probably also build in the features that are currently utilized from Ghi, so it eventually becomes just one install.
+Both as a git newbie and an old-timer professional you can use these five new  commands to open up a world into git, GitHub, GitHub issues and GitHub projects that makes collaboration among software developers - simple and delicious.
 
-## The git-phlow extension repository
-the official git-phlow tool is located on this repository [git-phlow](https://github.com/Praqma/git-phlow)
+### Documentation
 
-## Contribute
+Documentation is built in. From you terminal just run `git phlow` and head on from there.
 
-Yes! Please!
+#### The users: Both pigs AND chickens!
 
-Leave any kind of feed back in [issues](https://github.com/Praqma/the-phlow/issues) or leave any kind of snippets of updates as pull requests.
+![image](https://cloud.githubusercontent.com/assets/155492/23331843/5d55b194-fb6e-11e6-8754-f08c4bd8313c.png)
+
+Although the intended end-users of this phlow are developers, the argument for using it is not very technical. Often (too often) the choice of tools stack and process falls on managers and chickens, They too need to know that optimizing the workday of an arbitrary developer has a huge impact on business.
+
+
+The branching strategy underneath is a simple _release-train_ branching strategy (`master` being the only long-lived branch). It is fully supported by a declarative pipeline - free of choice - and that is including the test, deploy and release process.
+
+This is _Git Ops_; you just work in git, and then the entire World happens!
+
+The process is so simple that even non-techies will fall in love with GitHub.
+The phlow is also used by non-tech employees like marketing workers and event managers working The Phlow when they update our JAM stack website.
+
+
+The contemporary buzz goes: _Infrastructure as code_, _test as code_, _deployment as code_ well _anything as code_ basically. In the light of this buzz, it seems ironic, that most software development processes today are still plastered with manual processes.
+
+_Pull request centric_ flows included.
+
+In Praqma we worked with our clients on optimizing issue centric work processes. Over the course of more than 5 years we built _developer collaboration platforms_ rather than _SCM systems_. Embracing the Agile doctrine _"People over processes and tools"_. The Phlow strive for a process, that is so efficient, that it becomes invisible.
+
+The Phlow is the manifest of all these learnings and customer collaborations.
+
+#### About the maintainer
+I have been working with version control systems since the age of dawn - my first presentation on branching strategies (in ClearCase) was in Denver at Rational User Conference 2001.
+
+Since then I've made _version control_ in general my thing, and when git buried all competition in the field I specifically made _git_ my thing.
+
+I co-founded Praqma - The Continuous Delivery company. It's gone now, acquired by another company. But in Praqma is specialized in helping companies who develop software, to organize themselves in a way that allows quality to be built in - as opposed to glued on.
+
+Companies like Volvo, Grundfos, Kamstrup, Novo Nordisk, Atmel (now Microchip) and many other were actively participating in using, tearing and wearing this particular phlow into it's current level of simplicity and elegance.
